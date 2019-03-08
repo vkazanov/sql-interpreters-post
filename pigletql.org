@@ -1,0 +1,8 @@
+#+OPTIONS: ^:nil num:nil p:nil timestamp:nil todo:nil date:nil creator:nil author:nil toc:nil
+#+TITLE: Интерпретатор SQL
+* TODO Аннотация
+* TODO Краткая история SQL
+* TODO Реляционная алгебра
+* TODO Модели вычисления
+* TODO Модель Volcano
+* TODO PigletQL

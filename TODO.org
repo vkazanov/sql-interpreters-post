@@ -1,4 +1,6 @@
 * TODO [0/7] Relational Alebra
+** TODO Read table from memory
+** TODO Read table from a csv file
 ** TODO Prefilled table iteration
 ** TODO On-disk tables
 ** TODO Selection operator

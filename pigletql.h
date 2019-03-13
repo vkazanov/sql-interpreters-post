@@ -4,59 +4,19 @@
 #include <stdint.h>
 #include <assert.h>
 
+/*
+ * Common definitions
+ *  */
+
 #define MAX_ATTR_NUM (UINT16_MAX - 1)
 #define ATTR_NOT_FOUND UINT16_MAX
 #define MAX_ATTR_NAME_LEN 256
 
-typedef uint32_t value_type_t;
-typedef char attr_name_t[MAX_ATTR_NAME_LEN];
-
-typedef struct operator_t operator_t;
-typedef struct operator_state_t operator_state_t;
-
-typedef struct tuple_t tuple_t;
-typedef struct tuple_proxy_t tuple_proxy_t;
-typedef struct tuple_source_t tuple_source_t;
-typedef enum tuple_tag tuple_tag;
-
-struct operator_state_t {
-    operator_t *left_input;
-    operator_t *right_input;
-    void *state;
-};
-
-typedef void (*op_open)(operator_state_t *state);
-typedef tuple_t *(*op_next)(operator_state_t *state);
-typedef void (*op_close)(operator_state_t *state);
-
-struct operator_t {
-    op_open open;
-    op_next next;
-    op_close close;
-    operator_state_t *state;
-};
-
-enum tuple_tag {
-    TUPLE_SOURCE,
-    TUPLE_PROXY
-};
-
-struct tuple_proxy_t {
-};
-
-struct tuple_source_t {
-};
-
-struct tuple_t {
-    tuple_tag tag;
-    union {
-        tuple_source_t source;
-        tuple_proxy_t proxy;
-    } as;
-};
+typedef uint32_t value_type_t;  /* a single value type supported */
+typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */
 
 /*
- * Relation is an in-memory prefilled with values
+ * Relation is an in-memory table prefilled with values
  *  */
 
 typedef struct relation_t relation_t;
@@ -76,7 +36,33 @@ uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name
 void relation_destroy(relation_t *relation);
 
 /*
+ * A tuple is a reference to a real tuple in a relation
+ * */
+
+typedef struct tuple_t tuple_t;
+
+/*
+ * Operators iterate over relation tuples or tuples returned from other operators using 3 standard
+ * ops (open/next/close)
+ * */
+
+typedef void (*op_open)(void *state);
+typedef tuple_t *(*op_next)(void *state);
+typedef void (*op_close)(void *state);
+
+typedef struct operator_t {
+    op_open open;
+    op_next next;
+    op_close close;
+    void *state;
+} operator_t;
+
+/*
  * Table scan operator just goes over all tuples in a relation
  *  */
+
+operator_t *scan_op_create(relation_t *relation);
+
+void scan_op_destroy(operator_t *operator);
 
 #endif //PIGLETQL_H

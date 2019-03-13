@@ -62,4 +62,14 @@ struct tuple {
     } as;
 };
 
+relation_t *relation_create(void);
+
+void relation_fill_from_table(relation_t *relation,
+                              const value_type_t **table,
+                              const attr_name_t *tuple_attr_names,
+                              const uint32_t table_tuple_num,
+                              const uint16_t tuple_attr_num);
+
+void relation_destroy(relation_t *relation);
+
 #endif //PIGLETQL_H

@@ -1,0 +1,9 @@
+* TODO [0/7] Relational Alebra
+** TODO Prefilled table iteration
+** TODO On-disk tables
+** TODO Selection operator
+** TODO Projection operator
+** TODO Sort operator
+** TODO Join operator
+** TODO Union operator
+* TODO SQL

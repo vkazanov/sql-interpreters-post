@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include <assert.h>
 
-#define MAX_ATTR_NUM UINT16_MAX
+#define MAX_ATTR_NUM (UINT16_MAX - 1)
+#define ATTR_NOT_FOUND UINT16_MAX
 #define MAX_ATTR_NAME_LEN 256
 
 typedef uint32_t value_type_t;
@@ -14,6 +15,7 @@ typedef struct relation_t relation_t;
 typedef struct operator_t operator_t;
 typedef struct operator_state_t operator_state_t;
 
+typedef struct tuple_t tuple_t;
 typedef struct tuple_proxy_t tuple_proxy_t;
 typedef struct tuple_source_t tuple_source_t;
 typedef enum tuple_tag tuple_tag;
@@ -33,7 +35,7 @@ struct operator_state_t {
 };
 
 typedef void (*op_open)(operator_state_t *state);
-typedef tuple_proxy_t *(*op_next)(operator_state_t *state);
+typedef tuple_t *(*op_next)(operator_state_t *state);
 typedef void (*op_close)(operator_state_t *state);
 
 struct operator_t {
@@ -54,7 +56,7 @@ struct tuple_proxy_t {
 struct tuple_source_t {
 };
 
-struct tuple {
+struct tuple_t {
     tuple_tag tag;
     union {
         tuple_source_t source;

@@ -23,9 +23,9 @@ int main(int argc, char *argv[])
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
         relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
 
-        uint16_t id_pos = relation_value_pos_by_name(relation, "id");
-        uint16_t attr1_pos = relation_value_pos_by_name(relation, "attr1");
-        uint16_t attr2_pos = relation_value_pos_by_name(relation, "attr2");
+        const uint16_t id_pos = relation_value_pos_by_name(relation, "id");
+        const uint16_t attr1_pos = relation_value_pos_by_name(relation, "attr1");
+        const uint16_t attr2_pos = relation_value_pos_by_name(relation, "attr2");
 
         value_type_t *tuple_start = relation_tuple_values_by_id(relation, 0);
         assert(tuple_start[id_pos] == 0);

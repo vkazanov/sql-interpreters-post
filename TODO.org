@@ -1,6 +1,6 @@
-* TODO [1/8] Relational Alebra
+* TODO [2/8] Relational Alebra
 ** DONE Read table from memory
-** TODO Table scan operator
+** DONE Table scan operator
 ** TODO Projection operator
 ** TODO Selection operator
 ** TODO Sort operator

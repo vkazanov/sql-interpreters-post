@@ -3,6 +3,14 @@
 
 #include "pigletql.h"
 
+struct relation_t {
+    attr_name_t attr_names[MAX_ATTR_NUM];
+    uint16_t attr_num;
+
+    value_type_t *tuples;
+    uint32_t tuple_num;
+};
+
 relation_t *relation_create(void)
 {
     relation_t *rel = calloc(1, sizeof(*rel));

@@ -10,7 +10,6 @@
 
 typedef uint32_t value_type_t;
 typedef char attr_name_t[MAX_ATTR_NAME_LEN];
-typedef struct relation_t relation_t;
 
 typedef struct operator_t operator_t;
 typedef struct operator_state_t operator_state_t;
@@ -19,14 +18,6 @@ typedef struct tuple_t tuple_t;
 typedef struct tuple_proxy_t tuple_proxy_t;
 typedef struct tuple_source_t tuple_source_t;
 typedef enum tuple_tag tuple_tag;
-
-struct relation_t {
-    attr_name_t attr_names[MAX_ATTR_NUM];
-    uint16_t attr_num;
-
-    value_type_t *tuples;
-    uint32_t tuple_num;
-};
 
 struct operator_state_t {
     operator_t *left_input;
@@ -64,6 +55,12 @@ struct tuple_t {
     } as;
 };
 
+/*
+ * Relation is an in-memory prefilled with values
+ *  */
+
+typedef struct relation_t relation_t;
+
 relation_t *relation_create(void);
 
 void relation_fill_from_table(relation_t *relation,
@@ -77,5 +74,9 @@ value_type_t *relation_tuple_values_by_id(relation_t *rel, uint32_t tuple_i);
 uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name);
 
 void relation_destroy(relation_t *relation);
+
+/*
+ * Table scan operator just goes over all tuples in a relation
+ *  */
 
 #endif //PIGLETQL_H

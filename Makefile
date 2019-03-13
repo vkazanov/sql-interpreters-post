@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=gnu11 -g
+CFLAGS = -std=gnu11 -O2 -g
 
 all: test
 

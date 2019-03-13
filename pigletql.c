@@ -7,29 +7,49 @@
  * Tuple represent either a tuple itself or a proxy limiting access to certain attributes
  *  */
 
-typedef struct tuple_proxy_t tuple_proxy_t;
-typedef struct tuple_source_t tuple_source_t;
-typedef enum tuple_tag tuple_tag;
+typedef struct tuple_proxy_t {
+} tuple_proxy_t;
 
-enum tuple_tag {
+typedef struct tuple_source_t {
+    /* A reference to a relation containing the tuple */
+    relation_t *relation;
+    /* A reference to the values in the relation containing the tuple */
+    value_type_t *values;
+} tuple_source_t;
+
+
+typedef enum tuple_tag {
     TUPLE_SOURCE,
     TUPLE_PROXY
-};
-
-struct tuple_proxy_t {
-};
-
-struct tuple_source_t {
-    value_type_t *values;
-};
+} tuple_tag;
 
 struct tuple_t {
     tuple_tag tag;
     union {
+        /* Source tuple is a reference to raw data in the relations */
         tuple_source_t source;
+        /* A proxy tuple is a reference to another tuple resposible for giving access to chosen
+         * attributes only */
         tuple_proxy_t proxy;
     } as;
 };
+
+bool tuple_has_attr(const tuple_t *tuple, const attr_name_t attr_name)
+{
+    /* TODO: We only support source tuples for now */
+    assert(tuple->tag == TUPLE_SOURCE);
+    return relation_has_attr(tuple->as.source.relation, attr_name);
+}
+
+value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_name)
+{
+    /* TODO: We only support source tuples for now */
+    assert(tuple->tag == TUPLE_SOURCE);
+    relation_t *relation = tuple->as.source.relation;
+    uint16_t value_pos = relation_value_pos_by_name(relation, attr_name);
+    return tuple->as.source.values[value_pos];
+}
+
 
 /*
  * Relation - see pigletql.h for comments
@@ -85,6 +105,11 @@ uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name
     return ATTR_NOT_FOUND;
 }
 
+bool relation_has_attr(relation_t *rel, const attr_name_t attr_name)
+{
+    return relation_value_pos_by_name(rel, attr_name) != ATTR_NOT_FOUND;
+}
+
 void relation_destroy(relation_t *rel)
 {
     if (!rel)
@@ -99,8 +124,11 @@ void relation_destroy(relation_t *rel)
  *  */
 
 typedef struct scan_op_state_t {
+    /* A reference to the relation being scanned */
     relation_t *relation;
+    /* Next tuple index to retrieve from the relation */
     uint32_t next_tuple_i;
+    /* A structure to be filled with references to tuple data */
     tuple_t current_tuple;
 } scan_op_state_t;
 
@@ -148,6 +176,7 @@ operator_t *scan_op_create(relation_t *relation)
     state->next_tuple_i = 0;
     state->current_tuple.tag = TUPLE_SOURCE;
     state->current_tuple.as.source.values = NULL;
+    state->current_tuple.as.source.relation = relation;
     op->state = state;
 
     op->open = scan_op_open;

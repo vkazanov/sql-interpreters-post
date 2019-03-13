@@ -92,6 +92,51 @@ int main(int argc, char *argv[])
 
             scan_op_destroy(scan_op);
         }
+
+        /* Check values received */
+        {
+            operator_t *scan_op = scan_op_create(relation);
+            assert(scan_op);
+
+            scan_op->open(scan_op->state);
+
+            tuple_t *tuple = scan_op->next(scan_op->state);
+            assert(tuple);
+            assert(tuple_has_attr(tuple, "id"));
+            assert(tuple_has_attr(tuple, "attr1"));
+            assert(tuple_has_attr(tuple, "attr2"));
+            assert(tuple_get_attr_value(tuple, "id") == 0);
+            assert(tuple_get_attr_value(tuple, "attr1") == 2);
+            assert(tuple_get_attr_value(tuple, "attr2") == 3);
+
+            tuple = scan_op->next(scan_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 1);
+            assert(tuple_get_attr_value(tuple, "attr1") == 12);
+            assert(tuple_get_attr_value(tuple, "attr2") == 13);
+
+            tuple = scan_op->next(scan_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 2);
+            assert(tuple_get_attr_value(tuple, "attr1") == 22);
+            assert(tuple_get_attr_value(tuple, "attr2") == 23);
+
+            tuple = scan_op->next(scan_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 3);
+            assert(tuple_get_attr_value(tuple, "attr1") == 32);
+            assert(tuple_get_attr_value(tuple, "attr2") == 33);
+
+            tuple = scan_op->next(scan_op->state);
+            assert(!tuple);
+
+
+            scan_op->close(scan_op->state);
+
+            scan_op_destroy(scan_op);
+
+        }
+
         relation_destroy(relation);
     }
 

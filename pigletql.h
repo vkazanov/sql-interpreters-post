@@ -2,6 +2,7 @@
 #define PIGLETQL_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <assert.h>
 
 /*
@@ -16,7 +17,17 @@ typedef uint32_t value_type_t;  /* a single value type supported */
 typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */
 
 /*
- * Relation is an in-memory table prefilled with values
+ * A tuple is a reference to a real tuple stored in a relation
+ * */
+
+typedef struct tuple_t tuple_t;
+
+bool tuple_has_attr(const tuple_t *tuple, const attr_name_t attr_name);
+
+value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_name);
+
+/*
+ * Relation is an in-memory table containing raw tuple data
  *  */
 
 typedef struct relation_t relation_t;
@@ -33,13 +44,9 @@ value_type_t *relation_tuple_values_by_id(relation_t *rel, uint32_t tuple_i);
 
 uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name);
 
+bool relation_has_attr(relation_t *rel, const attr_name_t attr_name);
+
 void relation_destroy(relation_t *relation);
-
-/*
- * A tuple is a reference to a real tuple in a relation
- * */
-
-typedef struct tuple_t tuple_t;
 
 /*
  * Operators iterate over relation tuples or tuples returned from other operators using 3 standard

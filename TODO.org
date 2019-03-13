@@ -1,11 +1,10 @@
-* TODO [0/7] Relational Alebra
-** TODO Read table from memory
-** TODO Read table from a csv file
-** TODO Prefilled table iteration
-** TODO On-disk tables
-** TODO Selection operator
+* TODO [1/8] Relational Alebra
+** DONE Read table from memory
+** TODO Table scan operator
 ** TODO Projection operator
+** TODO Selection operator
 ** TODO Sort operator
 ** TODO Join operator
 ** TODO Union operator
+** TODO Read table from a csv file
 * TODO SQL

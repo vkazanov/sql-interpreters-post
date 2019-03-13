@@ -1,46 +1,46 @@
 #ifndef PIGLETQL_H
 #define PIGLETQL_H
 
-typedef struct operator operator;
-typedef struct operator_state operator_state;
+typedef struct operator_t operator_t;
+typedef struct operator_state_t operator_state_t;
 
-typedef struct record_proxy record_proxy;
-typedef struct record_source record_source;
-typedef enum record_tag record_tag;
+typedef struct tuple_proxy_t tuple_proxy_t;
+typedef struct tuple_source_t tuple_source_t;
+typedef enum tuple_tag tuple_tag;
 
-typedef void (*operator_open)(operator_state *state);
-typedef record_proxy *(*operator_next)(operator_state *state);
-typedef void (*operator_close)(operator_state *state);
+typedef void (*operator_open)(operator_state_t *state);
+typedef tuple_proxy_t *(*operator_next)(operator_state_t *state);
+typedef void (*operator_close)(operator_state_t *state);
 
-struct operator_state {
-    operator *left_input;
-    operator *right_input;
+struct operator_state_t {
+    operator_t *left_input;
+    operator_t *right_input;
     void *state;
 };
 
-struct operator {
+struct operator_t {
     operator_open open;
     operator_next next;
     operator_close close;
-    operator_state *state;
+    operator_state_t *state;
 };
 
-enum record_tag {
-    RECORD_SOURCE,
-    RECORD_PROXY
+enum tuple_tag {
+    TUPLE_SOURCE,
+    TUPLE_PROXY
 };
 
-struct record_proxy {
+struct tuple_proxy_t {
 };
 
-struct record_source {
+struct tuple_source_t {
 };
 
-struct record {
-    record_tag tag;
+struct tuple {
+    tuple_tag tag;
     union {
-        record_source source;
-        record_proxy proxy;
+        tuple_source_t source;
+        tuple_proxy_t proxy;
     } as;
 };
 

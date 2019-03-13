@@ -1,6 +1,16 @@
 #ifndef PIGLETQL_H
 #define PIGLETQL_H
 
+#include <stdint.h>
+#include <assert.h>
+
+#define MAX_ATTR_NUM UINT16_MAX
+#define MAX_ATTR_NAME_LEN 256
+
+typedef uint32_t value_type_t;
+typedef char attr_name_t[MAX_ATTR_NAME_LEN];
+typedef struct relation_t relation_t;
+
 typedef struct operator_t operator_t;
 typedef struct operator_state_t operator_state_t;
 
@@ -8,9 +18,13 @@ typedef struct tuple_proxy_t tuple_proxy_t;
 typedef struct tuple_source_t tuple_source_t;
 typedef enum tuple_tag tuple_tag;
 
-typedef void (*operator_open)(operator_state_t *state);
-typedef tuple_proxy_t *(*operator_next)(operator_state_t *state);
-typedef void (*operator_close)(operator_state_t *state);
+struct relation_t {
+    attr_name_t attr_names[MAX_ATTR_NUM];
+    uint16_t attr_num;
+
+    value_type_t **tuples;
+    uint32_t tuple_num;
+};
 
 struct operator_state_t {
     operator_t *left_input;
@@ -18,10 +32,14 @@ struct operator_state_t {
     void *state;
 };
 
+typedef void (*op_open)(operator_state_t *state);
+typedef tuple_proxy_t *(*op_next)(operator_state_t *state);
+typedef void (*op_close)(operator_state_t *state);
+
 struct operator_t {
-    operator_open open;
-    operator_next next;
-    operator_close close;
+    op_open open;
+    op_next next;
+    op_close close;
     operator_state_t *state;
 };
 

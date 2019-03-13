@@ -1,9 +1,10 @@
 CC = gcc
-CFLAGS = -std=gnu11 -O3 -g
+CFLAGS = -std=gnu11 -g
 
 all: test
 
 test: pigletql-test
+	./pigletql-test
 
 # pigletql: pigletql.c
 # 	$(CC) $(CFLAGS) $^ -o $@

@@ -24,7 +24,7 @@ struct relation_t {
     attr_name_t attr_names[MAX_ATTR_NUM];
     uint16_t attr_num;
 
-    value_type_t **tuples;
+    value_type_t *tuples;
     uint32_t tuple_num;
 };
 
@@ -67,10 +67,14 @@ struct tuple_t {
 relation_t *relation_create(void);
 
 void relation_fill_from_table(relation_t *relation,
-                              const value_type_t **table,
+                              const value_type_t *table,
                               const attr_name_t *tuple_attr_names,
                               const uint32_t table_tuple_num,
                               const uint16_t tuple_attr_num);
+
+value_type_t *relation_tuple_values_by_id(relation_t *rel, uint32_t tuple_i);
+
+uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name);
 
 void relation_destroy(relation_t *relation);
 

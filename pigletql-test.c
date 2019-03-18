@@ -130,11 +130,89 @@ int main(int argc, char *argv[])
             tuple = scan_op->next(scan_op->state);
             assert(!tuple);
 
-
             scan_op->close(scan_op->state);
 
             scan_op_destroy(scan_op);
 
+        }
+
+        relation_destroy(relation);
+    }
+
+    /* The projection operator */
+    {
+        relation_t *relation = relation_create();
+        assert(relation);
+
+        const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+        const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
+            {0, 02, 03},
+            {1, 12, 13},
+            {2, 22, 23},
+            {3, 32, 33},
+        };
+        const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
+        const uint16_t attr_num = ARRAY_SIZE(attr_names);
+        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        /* Count the tuples, check attributes */
+        {
+            /* This is gonna be wrapped */
+            operator_t *scan_op = scan_op_create(relation);
+            assert(scan_op);
+
+            const attr_name_t projected_attr_list[] = {"attr1", "attr2"};
+
+            operator_t *proj_op = proj_op_create(scan_op,
+                                                 projected_attr_list,
+                                                 ARRAY_SIZE(projected_attr_list));
+            assert(proj_op);
+
+            proj_op->open(proj_op->state);
+
+            tuple_t *tuple = proj_op->next(proj_op->state);
+            assert(tuple);
+
+            assert(!tuple_has_attr(tuple, "id"));
+            assert(tuple_has_attr(tuple, "attr1"));
+            assert(tuple_has_attr(tuple, "attr2"));
+            assert(tuple_get_attr_value(tuple, "attr1") == 2);
+            assert(tuple_get_attr_value(tuple, "attr2") == 3);
+
+            tuple = proj_op->next(proj_op->state);
+            assert(tuple);
+
+            assert(!tuple_has_attr(tuple, "id"));
+            assert(tuple_has_attr(tuple, "attr1"));
+            assert(tuple_has_attr(tuple, "attr2"));
+            assert(tuple_get_attr_value(tuple, "attr1") == 12);
+            assert(tuple_get_attr_value(tuple, "attr2") == 13);
+
+            tuple = proj_op->next(proj_op->state);
+            assert(tuple);
+
+            assert(!tuple_has_attr(tuple, "id"));
+            assert(tuple_has_attr(tuple, "attr1"));
+            assert(tuple_has_attr(tuple, "attr2"));
+            assert(tuple_get_attr_value(tuple, "attr1") == 22);
+            assert(tuple_get_attr_value(tuple, "attr2") == 23);
+
+            tuple = proj_op->next(proj_op->state);
+            assert(tuple);
+
+            assert(!tuple_has_attr(tuple, "id"));
+            assert(tuple_has_attr(tuple, "attr1"));
+            assert(tuple_has_attr(tuple, "attr2"));
+            assert(tuple_get_attr_value(tuple, "attr1") == 32);
+            assert(tuple_get_attr_value(tuple, "attr2") == 33);
+
+            tuple = proj_op->next(proj_op->state);
+            assert(!tuple);
+
+            proj_op->close(proj_op->state);
+
+            proj_op_destroy(proj_op);
+            scan_op_destroy(scan_op);
         }
 
         relation_destroy(relation);

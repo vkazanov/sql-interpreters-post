@@ -1,10 +1,10 @@
-* TODO [2/8] Relational Alebra
+* TODO [3/8] Algebra
 ** DONE Read table from memory
 ** DONE Table scan operator
-** TODO Projection operator
+** DONE Projection operator
+** TODO Union operator
+** TODO Join operator
 ** TODO Selection operator
 ** TODO Sort operator
-** TODO Join operator
-** TODO Union operator
 ** TODO Read table from a csv file
 * TODO SQL

@@ -4,12 +4,10 @@
 #include "pigletql.h"
 
 /*
- * Tuple represent either a tuple itself or a proxy limiting access to certain attributes
+ * Tuple represent either a tuple itself, a tuple projection or a tuple join
  *  */
 
-typedef struct tuple_proxy_t {
-} tuple_proxy_t;
-
+/* Source tuple is a reference to raw data in the relations */
 typedef struct tuple_source_t {
     /* A reference to a relation containing the tuple */
     relation_t *relation;
@@ -17,20 +15,27 @@ typedef struct tuple_source_t {
     value_type_t *values;
 } tuple_source_t;
 
+/* A projected tuple is a reference to another tuple giving access to a subset of referenced tuple
+ * attributes only */
+typedef struct tuple_project_t {
+    /* a reference to tuple to project attributes from  */
+    tuple_t *source_tuple;
+    /* projected attributes */
+    attr_name_t attr_names[MAX_ATTR_NUM];
+    uint16_t attr_num;
+} tuple_project_t;
 
 typedef enum tuple_tag {
     TUPLE_SOURCE,
-    TUPLE_PROXY
+    TUPLE_PROJECT
 } tuple_tag;
 
+/* A unified tuple type passed between operators */
 struct tuple_t {
     tuple_tag tag;
     union {
-        /* Source tuple is a reference to raw data in the relations */
         tuple_source_t source;
-        /* A proxy tuple is a reference to another tuple giving access to a subset of child
-         * attributes only */
-        tuple_proxy_t proxy;
+        tuple_project_t project;
     } as;
 };
 
@@ -39,13 +44,20 @@ static bool tuple_source_has_attr(const tuple_source_t *source, const attr_name_
     return relation_has_attr(source->relation, attr_name);
 }
 
+static bool tuple_project_has_attr(const tuple_project_t *project, const attr_name_t attr_name)
+{
+    for (size_t attr_i = 0; attr_i < project->attr_num; attr_i++ )
+        if (strcmp(project->attr_names[attr_i], attr_name) == 0)
+            return tuple_has_attr(project->source_tuple, attr_name);
+    return false;
+}
+
 bool tuple_has_attr(const tuple_t *tuple, const attr_name_t attr_name)
 {
-    /* TODO: We only support source tuples for now */
     if (tuple->tag == TUPLE_SOURCE)
         return tuple_source_has_attr(&tuple->as.source, attr_name);
-    else if (tuple->tag == TUPLE_PROXY)
-        assert(false);
+    else if (tuple->tag == TUPLE_PROJECT)
+        return tuple_project_has_attr(&tuple->as.project, attr_name);
     else
         assert(false);
 }
@@ -57,13 +69,20 @@ static value_type_t tuple_source_get_attr_value(const tuple_source_t *source, co
     return source->values[value_pos];
 }
 
+static value_type_t tuple_project_get_attr_value(const tuple_project_t *project, const attr_name_t attr_name)
+{
+    for (size_t attr_i = 0; attr_i < project->attr_num; attr_i++ )
+        if (strcmp(project->attr_names[attr_i], attr_name) == 0)
+            return tuple_get_attr_value(project->source_tuple, attr_name);
+    assert(false);
+}
+
 value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_name)
 {
-    /* TODO: We only support source tuples for now */
     if (tuple->tag == TUPLE_SOURCE)
         return tuple_source_get_attr_value(&tuple->as.source, attr_name);
-    else if (tuple->tag == TUPLE_PROXY)
-        assert(false);
+    else if (tuple->tag == TUPLE_PROJECT)
+        return tuple_project_get_attr_value(&tuple->as.project, attr_name);
     else
         assert(false);
 }
@@ -140,6 +159,8 @@ void relation_destroy(relation_t *rel)
  * Operators - see pigletql.h
  *  */
 
+/* Table scanning operator */
+
 typedef struct scan_op_state_t {
     /* A reference to the relation being scanned */
     relation_t *relation;
@@ -209,6 +230,87 @@ op_fail:
 }
 
 void scan_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
+/* Projection operator */
+
+typedef struct proj_op_state_t {
+    /* A reference to the operator to retrieve tuples from */
+    operator_t *source;
+    /* A projecting tuple  */
+    tuple_t current_tuple;
+} proj_op_state_t;
+
+void proj_op_open(void *state)
+{
+    proj_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+    source->open(source->state);
+    op_state->current_tuple.as.project.source_tuple = NULL;
+}
+
+tuple_t *proj_op_next(void *state)
+{
+    proj_op_state_t *op_state = (typeof(op_state)) state;
+
+    operator_t *source = op_state->source;
+    tuple_t *next_source_tuple = source->next(source->state);
+    if (!next_source_tuple)
+        return NULL;
+    op_state->current_tuple.as.project.source_tuple = next_source_tuple;
+
+    return &op_state->current_tuple;
+}
+
+void proj_op_close(void *state)
+{
+    proj_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+    op_state->current_tuple.as.project.source_tuple = NULL;
+    source->close(source->state);
+}
+
+operator_t *proj_op_create(operator_t *source,
+                           const attr_name_t *attr_names,
+                           const uint16_t attr_num)
+{
+    assert(source);
+    assert(attr_num > 0);
+
+    operator_t *op = calloc(1, sizeof(*op));
+    if (!op)
+        goto op_fail;
+
+    proj_op_state_t *state = calloc(1, sizeof(*state));
+    if (!state)
+        goto state_fail;
+
+    state->current_tuple.tag = TUPLE_PROJECT;
+    state->source = source;
+    op->state = state;
+
+    state->current_tuple.as.project.attr_num = attr_num;
+    for (size_t i = 0; i < attr_num; ++i)
+        strncpy(state->current_tuple.as.project.attr_names[i], attr_names[i], MAX_ATTR_NAME_LEN);
+
+    op->open = proj_op_open;
+    op->next = proj_op_next;
+    op->close = proj_op_close;
+
+    return op;
+
+state_fail:
+    free(op);
+op_fail:
+    return NULL;
+}
+
+void proj_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;

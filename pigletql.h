@@ -50,7 +50,7 @@ void relation_destroy(relation_t *relation);
 
 /*
  * Operators iterate over relation tuples or tuples returned from other operators using 3 standard
- * ops (open/next/close)
+ * ops: open, next, close
  * */
 
 typedef void (*op_open)(void *state);
@@ -71,5 +71,15 @@ typedef struct operator_t {
 operator_t *scan_op_create(relation_t *relation);
 
 void scan_op_destroy(operator_t *operator);
+
+/*
+ * Projection operator chooses a subset of attributes
+ *  */
+
+operator_t *proj_op_create(operator_t *source,
+                           const attr_name_t *tuple_attr_names,
+                           const uint16_t tuple_attr_num);
+
+void proj_op_destroy(operator_t *operator);
 
 #endif //PIGLETQL_H

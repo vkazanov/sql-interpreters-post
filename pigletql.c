@@ -10,7 +10,7 @@
 /* Source tuple is a reference to raw data in the relations */
 typedef struct tuple_source_t {
     /* A reference to a relation containing the tuple */
-    relation_t *relation;
+    const relation_t *relation;
     /* A reference to the values in the relation containing the tuple */
     value_type_t *values;
 } tuple_source_t;
@@ -64,7 +64,7 @@ bool tuple_has_attr(const tuple_t *tuple, const attr_name_t attr_name)
 
 static value_type_t tuple_source_get_attr_value(const tuple_source_t *source, const attr_name_t attr_name)
 {
-    relation_t *relation = source->relation;
+    const relation_t *relation = source->relation;
     uint16_t value_pos = relation_value_pos_by_name(relation, attr_name);
     return source->values[value_pos];
 }
@@ -128,12 +128,12 @@ void relation_fill_from_table(
             rel->tuples[tuple_i * attr_num + attr_i] = table[tuple_i * attr_num + attr_i];
 }
 
-value_type_t *relation_tuple_values_by_id(relation_t *rel, uint32_t tuple_i)
+value_type_t *relation_tuple_values_by_id(const relation_t *rel, uint32_t tuple_i)
 {
     return &rel->tuples[tuple_i * rel->attr_num];
 }
 
-uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name)
+uint16_t relation_value_pos_by_name(const relation_t *rel, const attr_name_t attr_name)
 {
     for (size_t attr_i = 0; attr_i < rel->attr_num; attr_i++)
         if (strcmp(rel->attr_names[attr_i], attr_name) == 0)
@@ -141,7 +141,7 @@ uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name
     return ATTR_NOT_FOUND;
 }
 
-bool relation_has_attr(relation_t *rel, const attr_name_t attr_name)
+bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name)
 {
     return relation_value_pos_by_name(rel, attr_name) != ATTR_NOT_FOUND;
 }
@@ -163,7 +163,7 @@ void relation_destroy(relation_t *rel)
 
 typedef struct scan_op_state_t {
     /* A reference to the relation being scanned */
-    relation_t *relation;
+    const relation_t *relation;
     /* Next tuple index to retrieve from the relation */
     uint32_t next_tuple_i;
     /* A structure to be filled with references to tuple data */
@@ -200,7 +200,7 @@ void scan_op_close(void *state)
     current_tuple->as.source.values = NULL;
 }
 
-operator_t *scan_op_create(relation_t *relation)
+operator_t *scan_op_create(const relation_t *relation)
 {
     operator_t *op = calloc(1, sizeof(*op));
     if (!op)

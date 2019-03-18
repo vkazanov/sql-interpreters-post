@@ -40,11 +40,11 @@ void relation_fill_from_table(relation_t *relation,
                               const uint32_t table_tuple_num,
                               const uint16_t tuple_attr_num);
 
-value_type_t *relation_tuple_values_by_id(relation_t *rel, uint32_t tuple_i);
+value_type_t *relation_tuple_values_by_id(const relation_t *rel, uint32_t tuple_i);
 
-uint16_t relation_value_pos_by_name(relation_t *rel, const attr_name_t attr_name);
+uint16_t relation_value_pos_by_name(const relation_t *rel, const attr_name_t attr_name);
 
-bool relation_has_attr(relation_t *rel, const attr_name_t attr_name);
+bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name);
 
 void relation_destroy(relation_t *relation);
 
@@ -68,7 +68,7 @@ typedef struct operator_t {
  * Table scan operator just goes over all tuples in a relation
  *  */
 
-operator_t *scan_op_create(relation_t *relation);
+operator_t *scan_op_create(const relation_t *relation);
 
 void scan_op_destroy(operator_t *operator);
 

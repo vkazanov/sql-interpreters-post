@@ -82,4 +82,14 @@ operator_t *proj_op_create(operator_t *source,
 
 void proj_op_destroy(operator_t *operator);
 
+/*
+ * Union operator glues together relations with the same attributes
+ *  */
+
+operator_t *union_op_create(operator_t *left_source,
+                            operator_t *right_source);
+
+void union_op_destroy(operator_t *operator);
+
+
 #endif //PIGLETQL_H

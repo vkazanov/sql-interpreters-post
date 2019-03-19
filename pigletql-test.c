@@ -218,5 +218,89 @@ int main(int argc, char *argv[])
         relation_destroy(relation);
     }
 
+    /* union operator */
+    {
+        relation_t *left_relation = relation_create();
+        relation_t *right_relation = relation_create();
+        assert(left_relation);
+        assert(right_relation);
+
+        const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+        const uint16_t attr_num = ARRAY_SIZE(attr_names);
+        const value_type_t left_tuple_table[3][ARRAY_SIZE(attr_names)] = {
+            {0, 02, 03},
+            {1, 12, 13},
+            {2, 22, 23},
+        };
+        const value_type_t right_tuple_table[2][ARRAY_SIZE(attr_names)] = {
+            {3, 32, 33},
+            {4, 42, 43},
+        };
+        const uint32_t left_tuple_num = ARRAY_SIZE(left_tuple_table);
+        const uint32_t right_tuple_num = ARRAY_SIZE(right_tuple_table);
+
+        relation_fill_from_table(left_relation, &left_tuple_table[0][0], attr_names, left_tuple_num, attr_num);
+        relation_fill_from_table(right_relation, &right_tuple_table[0][0], attr_names, right_tuple_num, attr_num);
+
+        {
+            operator_t *left_scan_op = scan_op_create(left_relation);
+            operator_t *right_scan_op = scan_op_create(right_relation);
+            assert(left_scan_op);
+            assert(right_scan_op);
+
+            operator_t *union_op = union_op_create(left_scan_op, right_scan_op);
+            assert(union_op);
+
+            union_op->open(union_op->state);
+
+            tuple_t *tuple = union_op->next(union_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "id") == 0);
+            assert(tuple_get_attr_value(tuple, "attr1") == 2);
+            assert(tuple_get_attr_value(tuple, "attr2") == 3);
+
+            tuple = union_op->next(union_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "id") == 1);
+            assert(tuple_get_attr_value(tuple, "attr1") == 12);
+            assert(tuple_get_attr_value(tuple, "attr2") == 13);
+
+            tuple = union_op->next(union_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "id") == 2);
+            assert(tuple_get_attr_value(tuple, "attr1") == 22);
+            assert(tuple_get_attr_value(tuple, "attr2") == 23);
+
+            tuple = union_op->next(union_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "id") == 3);
+            assert(tuple_get_attr_value(tuple, "attr1") == 32);
+            assert(tuple_get_attr_value(tuple, "attr2") == 33);
+
+            tuple = union_op->next(union_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "id") == 4);
+            assert(tuple_get_attr_value(tuple, "attr1") == 42);
+            assert(tuple_get_attr_value(tuple, "attr2") == 43);
+
+            tuple = union_op->next(union_op->state);
+            assert(!tuple);
+
+            union_op->close(union_op->state);
+
+            scan_op_destroy(left_scan_op);
+            scan_op_destroy(right_scan_op);
+            union_op_destroy(union_op);
+        }
+
+        relation_destroy(left_relation);
+        relation_destroy(right_relation);
+    }
+
     return 0;
 }

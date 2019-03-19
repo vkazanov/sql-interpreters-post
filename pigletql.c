@@ -317,3 +317,92 @@ void proj_op_destroy(operator_t *operator)
     free(operator->state);
     free(operator);
 }
+
+/* Union operator */
+
+typedef struct union_op_state_t {
+    /* Tuple sources to be united */
+    operator_t *left_source;
+    operator_t *right_source;
+
+    /* the current tuple source */
+    operator_t *current_source;
+} union_op_state_t;
+
+void union_op_open(void *state)
+{
+    union_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *left_source = op_state->left_source;
+    operator_t *right_source = op_state->right_source;
+    left_source->open(left_source->state);
+    right_source->open(right_source->state);
+
+    /* Begin with the left source */
+    op_state->current_source = left_source;
+}
+
+tuple_t *union_op_next(void *state)
+{
+    union_op_state_t *op_state = (typeof(op_state)) state;
+
+    operator_t *current_source = op_state->current_source;
+    tuple_t *next_source_tuple = current_source->next(current_source->state);
+
+    /* the left tuple source is exhausted: switch to the right source, reretrieve a tuple */
+    if (!next_source_tuple && current_source == op_state->left_source) {
+        op_state->current_source = op_state->right_source;
+        current_source = op_state->current_source;
+
+        next_source_tuple = current_source->next(current_source->state);
+    }
+
+    return next_source_tuple;
+}
+
+void union_op_close(void *state)
+{
+    union_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *left_source = op_state->left_source;
+    operator_t *right_source = op_state->right_source;
+    left_source->close(left_source->state);
+    right_source->close(right_source->state);
+
+    op_state->current_source = NULL;
+}
+
+operator_t *union_op_create(operator_t *left_source,
+                            operator_t *right_source)
+{
+    assert(left_source && right_source);
+
+    operator_t *op = calloc(1, sizeof(*op));
+    if (!op)
+        goto op_fail;
+
+    union_op_state_t *state = calloc(1, sizeof(*state));
+    if (!state)
+        goto state_fail;
+
+    state->left_source = left_source;
+    state->right_source = right_source;
+    op->state = state;
+
+    op->open = union_op_open;
+    op->next = union_op_next;
+    op->close = union_op_close;
+
+    return op;
+
+state_fail:
+    free(op);
+op_fail:
+    return NULL;
+}
+
+void union_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}

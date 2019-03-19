@@ -31,7 +31,7 @@ typedef struct tuple_project_t {
     uint16_t attr_num;
 } tuple_project_t;
 
-/* A joined tuple a tuple referencing  */
+/* A joined tuple is a tuple containing attributes from 2 source tuples  */
 typedef struct tuple_join_t {
     /* Contained tuples to join attributes from */
     tuple_t *left_source_tuple;
@@ -457,8 +457,6 @@ void join_op_open(void *state)
     operator_t *right_source = op_state->right_source;
     left_source->open(left_source->state);
     right_source->open(right_source->state);
-
-    op_state->current_tuple.as.join.left_source_tuple = left_source->next(left_source->state);
 }
 
 tuple_t *join_op_next(void *state)
@@ -469,15 +467,30 @@ tuple_t *join_op_next(void *state)
     operator_t *right_source = op_state->right_source;
     tuple_join_t *join_tuple = &op_state->current_tuple.as.join;
 
-    /* No more tuples in the left source? Done joining. */
-    if (!join_tuple->left_source_tuple)
-        return NULL;
+    /* Nothing in the left source? See if we can get one more tuple */
+    if (!join_tuple->left_source_tuple) {
+        join_tuple->left_source_tuple = left_source->next(left_source->state);
+        /* Still nothing? Done joining */
+        if (!join_tuple->left_source_tuple)
+            return NULL;
+    }
 
     join_tuple->right_source_tuple = right_source->next(right_source->state);
-    /* No more tuples in the right source? Try the next left source */
+    /* No more tuples in the right source? Get the next left source tuple and reset the right source
+     * operator */
     if (!join_tuple->right_source_tuple) {
         join_tuple->left_source_tuple = left_source->next(left_source->state);
-        /* TODO: reset the right source and get the first tuple there */
+        /* Nothing in the left tuple? Done joining */
+        if (!join_tuple->left_source_tuple)
+            return NULL;
+
+        /* reset the right source */
+        right_source->close(right_source->state);
+        right_source->open(right_source->state);
+        join_tuple->right_source_tuple = right_source->next(right_source->state);
+        /* We've resetted the right source and there's nothing - empty relation */
+        if (!join_tuple->right_source_tuple)
+            return NULL;
     }
 
     return &op_state->current_tuple;
@@ -490,6 +503,9 @@ void join_op_close(void *state)
     operator_t *right_source = op_state->right_source;
     left_source->close(left_source->state);
     right_source->close(right_source->state);
+
+    op_state->current_tuple.as.join.left_source_tuple = NULL;
+    op_state->current_tuple.as.join.right_source_tuple = NULL;
 }
 
 operator_t *join_op_create(operator_t *left_source,

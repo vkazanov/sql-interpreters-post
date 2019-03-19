@@ -9,8 +9,11 @@
  * Common definitions
  *  */
 
+/* maximum number of attributes per relation */
 #define MAX_ATTR_NUM (UINT16_MAX - 1)
+/* return value telling that an attribute was not found */
 #define ATTR_NOT_FOUND UINT16_MAX
+/* maximum attribute name length */
 #define MAX_ATTR_NAME_LEN 256
 
 typedef uint32_t value_type_t;  /* a single value type supported */
@@ -51,12 +54,19 @@ void relation_destroy(relation_t *relation);
 /*
  * Operators iterate over relation tuples or tuples returned from other operators using 3 standard
  * ops: open, next, close.
+ *
+ * open - starts iteration over available tuples from the very beginning
+ *
+ * next - retrieves the next tuple, ending with a NULL value
+ *
+ * close - closes the operator and resets its state
  * */
 
 typedef void (*op_open)(void *state);
 typedef tuple_t *(*op_next)(void *state);
 typedef void (*op_close)(void *state);
 
+/* The operator itself is just 3 pointers to related ops and operator state */
 typedef struct operator_t {
     op_open open;
     op_next next;
@@ -83,7 +93,7 @@ operator_t *proj_op_create(operator_t *source,
 void proj_op_destroy(operator_t *operator);
 
 /*
- * Union operator gets tuples from both supllied relations with the same attributes.
+ * Union operator gets tuples from both supplied relations with the same attributes.
  * */
 
 operator_t *union_op_create(operator_t *left_source,
@@ -93,7 +103,7 @@ void union_op_destroy(operator_t *operator);
 
 /*
  * Join operator does a cross join of two relations, i.e. it returns all possible combinations of
- * tuples from both relations, with attributes combined.
+ * tuples from both relations, with attributes joined.
  * */
 
 operator_t *join_op_create(operator_t *left_source,

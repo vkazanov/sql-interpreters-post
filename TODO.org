@@ -1,9 +1,9 @@
-* TODO [4/8] Algebra
+* TODO [5/8] Algebra
 ** DONE Read table from memory
 ** DONE Table scan operator
 ** DONE Projection operator
 ** DONE Union operator
-** TODO Join operator
+** DONE Join operator
 ** TODO Selection operator
 ** TODO Sort operator
 ** TODO Read table from a csv file

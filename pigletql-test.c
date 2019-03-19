@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
             {31, 32, 33},
             {41, 42, 43},
         };
-        const uint32_t right_tuple_num = ARRAY_SIZE(left_tuple_table);
+        const uint32_t right_tuple_num = ARRAY_SIZE(right_tuple_table);
 
         relation_fill_from_table(
             left_relation,
@@ -354,12 +354,6 @@ int main(int argc, char *argv[])
 
             tuple_t *tuple = join_op->next(join_op->state);
             assert(tuple);
-
-            assert(tuple_has_attr(tuple, "attr1"));
-            assert(tuple_has_attr(tuple, "attr2"));
-            assert(tuple_has_attr(tuple, "attr3"));
-            assert(tuple_has_attr(tuple, "attr4"));
-            assert(tuple_has_attr(tuple, "attr5"));
 
             assert(tuple_get_attr_value(tuple, "attr1") == 1);
             assert(tuple_get_attr_value(tuple, "attr2") == 2);

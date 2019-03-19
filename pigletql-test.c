@@ -302,5 +302,129 @@ int main(int argc, char *argv[])
         relation_destroy(right_relation);
     }
 
+    /* Join operator */
+    {
+        relation_t *left_relation = relation_create();
+        relation_t *right_relation = relation_create();
+        assert(left_relation);
+        assert(right_relation);
+
+        const attr_name_t left_attr_names[] = {"attr1", "attr2"};
+        const uint16_t left_attr_num = ARRAY_SIZE(left_attr_names);
+        const value_type_t left_tuple_table[3][ARRAY_SIZE(left_attr_names)] = {
+            {01, 02},
+            {11, 12},
+            {21, 22},
+        };
+        const uint32_t left_tuple_num = ARRAY_SIZE(left_tuple_table);
+
+        const attr_name_t right_attr_names[] = {"attr3", "attr4", "attr5"};
+        const uint16_t right_attr_num = ARRAY_SIZE(right_attr_names);
+        const value_type_t right_tuple_table[2][ARRAY_SIZE(right_attr_names)] = {
+            {31, 32, 33},
+            {41, 42, 43},
+        };
+        const uint32_t right_tuple_num = ARRAY_SIZE(left_tuple_table);
+
+        relation_fill_from_table(
+            left_relation,
+            &left_tuple_table[0][0],
+            left_attr_names,
+            left_tuple_num,
+            left_attr_num
+        );
+        relation_fill_from_table(
+            right_relation,
+            &right_tuple_table[0][0],
+            right_attr_names,
+            right_tuple_num,
+            right_attr_num
+        );
+
+        {
+            operator_t *left_scan_op = scan_op_create(left_relation);
+            operator_t *right_scan_op = scan_op_create(right_relation);
+            assert(left_scan_op);
+            assert(right_scan_op);
+
+            operator_t *join_op = join_op_create(left_scan_op, right_scan_op);
+            assert(join_op);
+
+            join_op->open(join_op->state);
+
+            tuple_t *tuple = join_op->next(join_op->state);
+            assert(tuple);
+
+            assert(tuple_has_attr(tuple, "attr1"));
+            assert(tuple_has_attr(tuple, "attr2"));
+            assert(tuple_has_attr(tuple, "attr3"));
+            assert(tuple_has_attr(tuple, "attr4"));
+            assert(tuple_has_attr(tuple, "attr5"));
+
+            assert(tuple_get_attr_value(tuple, "attr1") == 1);
+            assert(tuple_get_attr_value(tuple, "attr2") == 2);
+            assert(tuple_get_attr_value(tuple, "attr3") == 31);
+            assert(tuple_get_attr_value(tuple, "attr4") == 32);
+            assert(tuple_get_attr_value(tuple, "attr5") == 33);
+
+            tuple = join_op->next(join_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "attr1") == 1);
+            assert(tuple_get_attr_value(tuple, "attr2") == 2);
+            assert(tuple_get_attr_value(tuple, "attr3") == 41);
+            assert(tuple_get_attr_value(tuple, "attr4") == 42);
+            assert(tuple_get_attr_value(tuple, "attr5") == 43);
+
+            tuple = join_op->next(join_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "attr1") == 11);
+            assert(tuple_get_attr_value(tuple, "attr2") == 12);
+            assert(tuple_get_attr_value(tuple, "attr3") == 31);
+            assert(tuple_get_attr_value(tuple, "attr4") == 32);
+            assert(tuple_get_attr_value(tuple, "attr5") == 33);
+
+            tuple = join_op->next(join_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "attr1") == 11);
+            assert(tuple_get_attr_value(tuple, "attr2") == 12);
+            assert(tuple_get_attr_value(tuple, "attr3") == 41);
+            assert(tuple_get_attr_value(tuple, "attr4") == 42);
+            assert(tuple_get_attr_value(tuple, "attr5") == 43);
+
+            tuple = join_op->next(join_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "attr1") == 21);
+            assert(tuple_get_attr_value(tuple, "attr2") == 22);
+            assert(tuple_get_attr_value(tuple, "attr3") == 31);
+            assert(tuple_get_attr_value(tuple, "attr4") == 32);
+            assert(tuple_get_attr_value(tuple, "attr5") == 33);
+
+            tuple = join_op->next(join_op->state);
+            assert(tuple);
+
+            assert(tuple_get_attr_value(tuple, "attr1") == 21);
+            assert(tuple_get_attr_value(tuple, "attr2") == 22);
+            assert(tuple_get_attr_value(tuple, "attr3") == 41);
+            assert(tuple_get_attr_value(tuple, "attr4") == 42);
+            assert(tuple_get_attr_value(tuple, "attr5") == 43);
+
+            tuple = join_op->next(join_op->state);
+            assert(!tuple);
+
+            join_op->close(join_op->state);
+
+            scan_op_destroy(left_scan_op);
+            scan_op_destroy(right_scan_op);
+            join_op_destroy(join_op);
+        }
+
+        relation_destroy(left_relation);
+        relation_destroy(right_relation);
+    }
+
     return 0;
 }

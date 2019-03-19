@@ -50,7 +50,7 @@ void relation_destroy(relation_t *relation);
 
 /*
  * Operators iterate over relation tuples or tuples returned from other operators using 3 standard
- * ops: open, next, close
+ * ops: open, next, close.
  * */
 
 typedef void (*op_open)(void *state);
@@ -65,7 +65,7 @@ typedef struct operator_t {
 } operator_t;
 
 /*
- * Table scan operator just goes over all tuples in a relation
+ * Table scan operator just goes over all tuples in a relation.
  *  */
 
 operator_t *scan_op_create(const relation_t *relation);
@@ -73,7 +73,7 @@ operator_t *scan_op_create(const relation_t *relation);
 void scan_op_destroy(operator_t *operator);
 
 /*
- * Projection operator chooses a subset of attributes
+ * Projection operator chooses a subset of attributes.
  *  */
 
 operator_t *proj_op_create(operator_t *source,
@@ -83,13 +83,23 @@ operator_t *proj_op_create(operator_t *source,
 void proj_op_destroy(operator_t *operator);
 
 /*
- * Union operator glues together relations with the same attributes
- *  */
+ * Union operator gets tuples from both supllied relations with the same attributes.
+ * */
 
 operator_t *union_op_create(operator_t *left_source,
                             operator_t *right_source);
 
 void union_op_destroy(operator_t *operator);
+
+/*
+ * Join operator does a cross join of two relations, i.e. it returns all possible combinations of
+ * tuples from both relations, with attributes combined.
+ * */
+
+operator_t *join_op_create(operator_t *left_source,
+                           operator_t *right_source);
+
+void join_op_destroy(operator_t *operator);
 
 
 #endif //PIGLETQL_H

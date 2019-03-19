@@ -4,8 +4,14 @@
 #include "pigletql.h"
 
 /*
- * Tuple represent either a tuple itself, a tuple projection or a tuple join
+ * Tuple represents either a tuple itself, a tuple projection or a tuple join
  *  */
+
+typedef enum tuple_tag {
+    TUPLE_SOURCE,
+    TUPLE_PROJECT,
+    TUPLE_JOIN
+} tuple_tag;
 
 /* Source tuple is a reference to raw data in the relations */
 typedef struct tuple_source_t {
@@ -25,10 +31,12 @@ typedef struct tuple_project_t {
     uint16_t attr_num;
 } tuple_project_t;
 
-typedef enum tuple_tag {
-    TUPLE_SOURCE,
-    TUPLE_PROJECT
-} tuple_tag;
+/* A joined tuple a tuple referencing  */
+typedef struct tuple_join_t {
+    /* Contained tuples to join attributes from */
+    tuple_t *left_source_tuple;
+    tuple_t *right_source_tuple;
+} tuple_join_t;
 
 /* A unified tuple type passed between operators */
 struct tuple_t {
@@ -36,6 +44,7 @@ struct tuple_t {
     union {
         tuple_source_t source;
         tuple_project_t project;
+        tuple_join_t join;
     } as;
 };
 
@@ -52,12 +61,20 @@ static bool tuple_project_has_attr(const tuple_project_t *project, const attr_na
     return false;
 }
 
+static bool tuple_join_has_attr(const tuple_join_t *join, const attr_name_t attr_name)
+{
+    return tuple_has_attr(join->left_source_tuple, attr_name) ||
+        tuple_has_attr(join->right_source_tuple, attr_name);
+}
+
 bool tuple_has_attr(const tuple_t *tuple, const attr_name_t attr_name)
 {
     if (tuple->tag == TUPLE_SOURCE)
         return tuple_source_has_attr(&tuple->as.source, attr_name);
     else if (tuple->tag == TUPLE_PROJECT)
         return tuple_project_has_attr(&tuple->as.project, attr_name);
+    else if (tuple->tag == TUPLE_JOIN)
+        return tuple_join_has_attr(&tuple->as.join, attr_name);
     else
         assert(false);
 }
@@ -77,12 +94,24 @@ static value_type_t tuple_project_get_attr_value(const tuple_project_t *project,
     assert(false);
 }
 
+static value_type_t tuple_join_get_attr_value(const tuple_join_t *join, const attr_name_t attr_name)
+{
+    if (tuple_has_attr(join->left_source_tuple, attr_name))
+        return tuple_get_attr_value(join->left_source_tuple, attr_name);
+    else if (tuple_has_attr(join->right_source_tuple, attr_name))
+        return tuple_get_attr_value(join->right_source_tuple, attr_name);
+    else
+        assert(false);
+}
+
 value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_name)
 {
     if (tuple->tag == TUPLE_SOURCE)
         return tuple_source_get_attr_value(&tuple->as.source, attr_name);
     else if (tuple->tag == TUPLE_PROJECT)
         return tuple_project_get_attr_value(&tuple->as.project, attr_name);
+    else if (tuple->tag == TUPLE_JOIN)
+        return tuple_join_get_attr_value(&tuple->as.join, attr_name);
     else
         assert(false);
 }
@@ -400,6 +429,99 @@ op_fail:
 }
 
 void union_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
+/* Join operator */
+
+typedef struct join_op_state_t {
+    /* Tuple sources to be joined */
+    operator_t *left_source;
+    operator_t *right_source;
+
+    /* Current left source tuple to be joined with right source tuples */
+    tuple_t *current_left_tuple;
+
+    /* Joined tuple to be returned */
+    tuple_t current_tuple;
+} join_op_state_t;
+
+void join_op_open(void *state)
+{
+    join_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *left_source = op_state->left_source;
+    operator_t *right_source = op_state->right_source;
+    left_source->open(left_source->state);
+    right_source->open(right_source->state);
+
+    op_state->current_tuple.as.join.left_source_tuple = left_source->next(left_source->state);
+}
+
+tuple_t *join_op_next(void *state)
+{
+    join_op_state_t *op_state = (typeof(op_state)) state;
+
+    operator_t *left_source = op_state->left_source;
+    operator_t *right_source = op_state->right_source;
+    tuple_join_t *join_tuple = &op_state->current_tuple.as.join;
+
+    /* No more tuples in the left source? Done joining. */
+    if (!join_tuple->left_source_tuple)
+        return NULL;
+
+    join_tuple->right_source_tuple = right_source->next(right_source->state);
+    /* No more tuples in the right source? Try the next left source */
+    if (!join_tuple->right_source_tuple) {
+        join_tuple->left_source_tuple = left_source->next(left_source->state);
+        /* TODO: reset the right source and get the first tuple there */
+    }
+
+    return &op_state->current_tuple;
+}
+
+void join_op_close(void *state)
+{
+    join_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *left_source = op_state->left_source;
+    operator_t *right_source = op_state->right_source;
+    left_source->close(left_source->state);
+    right_source->close(right_source->state);
+}
+
+operator_t *join_op_create(operator_t *left_source,
+                           operator_t *right_source)
+{
+    assert(left_source && right_source);
+    operator_t *op = calloc(1, sizeof(*op));
+    if (!op)
+        goto op_fail;
+
+    join_op_state_t *state = calloc(1, sizeof(*state));
+    if (!state)
+        goto state_fail;
+
+    state->left_source = left_source;
+    state->right_source = right_source;
+    state->current_tuple.tag = TUPLE_JOIN;
+    op->state = state;
+
+    op->open = join_op_open;
+    op->next = join_op_next;
+    op->close = join_op_close;
+
+    return op;
+
+state_fail:
+    free(op);
+op_fail:
+    return NULL;
+}
+
+void join_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;

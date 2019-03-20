@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
         relation_destroy(right_relation);
     }
 
-    /* Selection operator */
+    /* Selection operator (attr to const comparison) */
     {
         relation_t *relation = relation_create();
         assert(relation);
@@ -468,8 +468,85 @@ int main(int argc, char *argv[])
             scan_op_destroy(scan_op);
         }
 
+        {
+            operator_t *scan_op = scan_op_create(relation);
+            assert(scan_op);
+
+            operator_t *select_op = select_op_create(scan_op);
+            assert(select_op);
+
+            /* Select row where: attr1 = 12  */
+            select_op_add_attr_const_predicate(select_op, "attr1", SELECT_EQ, 12);
+
+            select_op->open(select_op->state);
+
+            tuple_t *tuple = select_op->next(select_op->state);
+            assert(tuple);
+            assert(tuple_has_attr(tuple, "attr1"));
+            assert(tuple_get_attr_value(tuple, "attr1") == 12);
+
+            tuple = select_op->next(select_op->state);
+            assert(!tuple);
+
+            select_op->close(select_op->state);
+
+            select_op_destroy(select_op);
+            scan_op_destroy(scan_op);
+        }
+
         relation_destroy(relation);
     }
+
+    /* Selection operator (attr to attr comparison) */
+    {
+        relation_t *relation = relation_create();
+        assert(relation);
+
+        const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+        const value_type_t tuple_table[5][ARRAY_SIZE(attr_names)] = {
+            {0, 02, 03},
+            {1, 12, 13},
+            {2, 22, 23},
+            {100, 50, 30},
+            {150, 30, 50},
+        };
+        const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
+        const uint16_t attr_num = ARRAY_SIZE(attr_names);
+        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        /* A single check */
+        {
+            operator_t *scan_op = scan_op_create(relation);
+            assert(scan_op);
+
+            operator_t *select_op = select_op_create(scan_op);
+            assert(select_op);
+
+            /* Select row where: id > attr1 AND attr1 > attr2   */
+            select_op_add_attr_attr_predicate(select_op, "id", SELECT_GT, "attr1");
+            select_op_add_attr_attr_predicate(select_op, "attr1", SELECT_GT, "attr2");
+
+            select_op->open(select_op->state);
+
+            tuple_t *tuple = select_op->next(select_op->state);
+            assert(tuple);
+            assert(tuple_has_attr(tuple, "id"));
+            assert(tuple_get_attr_value(tuple, "id") == 100);
+            assert(tuple_get_attr_value(tuple, "attr1") == 50);
+            assert(tuple_get_attr_value(tuple, "attr2") == 30);
+
+            tuple = select_op->next(select_op->state);
+            assert(!tuple);
+
+            select_op->close(select_op->state);
+
+            select_op_destroy(select_op);
+            scan_op_destroy(scan_op);
+        }
+
+        relation_destroy(relation);
+    }
+
 
     return 0;
 }

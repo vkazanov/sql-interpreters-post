@@ -550,16 +550,30 @@ void join_op_destroy(operator_t *operator)
 
 #define MAX_SELECT_PREDICATE_NUM 16
 
-typedef struct select_predicate {
+typedef enum select_predicate_tag {
+    SELECT_ATTR_CONST,
+    SELECT_ATTR_ATTR,
+} select_predicate_tag;
+
+typedef struct select_predicate_t {
+    select_predicate_tag tag;
     select_predicate_op op;
-    attr_name_t attr_name;
-    value_type_t constant;
-} select_predicate;
+    union {
+        struct {
+            attr_name_t left_attr_name;
+            value_type_t right_constant;
+        } attr_const;
+        struct {
+            attr_name_t left_attr_name;
+            attr_name_t right_attr_name;
+        } attr_attr;
+    } as;
+} select_predicate_t;
 
 typedef struct select_op_state_t {
     /* Tuple source to apply filters to */
     operator_t *source;
-    select_predicate predicates[MAX_SELECT_PREDICATE_NUM];
+    select_predicate_t predicates[MAX_SELECT_PREDICATE_NUM];
     size_t predicate_num;
 } select_op_state_t;
 
@@ -583,14 +597,22 @@ static bool op_compare_values(select_predicate_op op, value_type_t left_value, v
     assert(false);
 }
 
-static bool tuple_satisfies_predicate(tuple_t *tuple, select_predicate *predicate)
+static bool tuple_satisfies_predicate(tuple_t *tuple, select_predicate_t *predicate)
 {
-    value_type_t attr_value = tuple_get_attr_value(tuple, predicate->attr_name);
-    value_type_t const_value = predicate->constant;
-    return op_compare_values(predicate->op, attr_value, const_value);
+    value_type_t left_value, right_value;
+    if (predicate->tag == SELECT_ATTR_CONST) {
+        left_value = tuple_get_attr_value(tuple, predicate->as.attr_const.left_attr_name);
+        right_value = predicate->as.attr_const.right_constant;
+    } else if (predicate->tag == SELECT_ATTR_ATTR) {
+        left_value = tuple_get_attr_value(tuple, predicate->as.attr_attr.left_attr_name);
+        right_value = tuple_get_attr_value(tuple, predicate->as.attr_attr.right_attr_name);
+    } else {
+        assert(false);
+    }
+    return op_compare_values(predicate->op, left_value, right_value);
 }
 
-static bool tuple_satisfies_predicates(tuple_t *tuple, select_predicate predicates[], size_t predicate_num)
+static bool tuple_satisfies_predicates(tuple_t *tuple, select_predicate_t predicates[], size_t predicate_num)
 {
     for (size_t pred_i = 0; pred_i < predicate_num; ++pred_i)
         if (!tuple_satisfies_predicate(tuple, &predicates[pred_i]))
@@ -619,16 +641,37 @@ void select_op_close(void *state)
 }
 
 void select_op_add_attr_const_predicate(operator_t *operator,
-                                        const attr_name_t attr_name,
+                                        const attr_name_t left_attr_name,
                                         const select_predicate_op predicate_op,
-                                        const value_type_t value)
+                                        const value_type_t right_constant)
 {
     select_op_state_t *op_state = (typeof(op_state)) operator->state;
     assert(op_state->predicate_num < MAX_SELECT_PREDICATE_NUM);
 
-    strncpy(op_state->predicates[op_state->predicate_num].attr_name, attr_name, MAX_ATTR_NAME_LEN);
-    op_state->predicates[op_state->predicate_num].op = predicate_op;
-    op_state->predicates[op_state->predicate_num].constant = value;
+    select_predicate_t *predicate = &op_state->predicates[op_state->predicate_num];
+
+    predicate->tag = SELECT_ATTR_CONST;
+    predicate->op = predicate_op;
+    strncpy(predicate->as.attr_const.left_attr_name, left_attr_name, MAX_ATTR_NAME_LEN);
+    predicate->as.attr_const.right_constant = right_constant;
+
+    op_state->predicate_num++;
+}
+
+void select_op_add_attr_attr_predicate(operator_t *operator,
+                                       const attr_name_t left_attr_name,
+                                       const select_predicate_op predicate_op,
+                                       const attr_name_t right_attr_name)
+{
+    select_op_state_t *op_state = (typeof(op_state)) operator->state;
+    assert(op_state->predicate_num < MAX_SELECT_PREDICATE_NUM);
+
+    select_predicate_t *predicate = &op_state->predicates[op_state->predicate_num];
+
+    predicate->tag = SELECT_ATTR_ATTR;
+    predicate->op = predicate_op;
+    strncpy(predicate->as.attr_attr.left_attr_name, left_attr_name, MAX_ATTR_NAME_LEN);
+    strncpy(predicate->as.attr_attr.right_attr_name, right_attr_name, MAX_ATTR_NAME_LEN);
 
     op_state->predicate_num++;
 }

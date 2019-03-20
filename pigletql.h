@@ -123,9 +123,14 @@ typedef enum select_predicate_op {
 } select_predicate_op;
 
 void select_op_add_attr_const_predicate(operator_t *operator,
-                                        const attr_name_t attr_name,
+                                        const attr_name_t left_attr_name,
                                         const select_predicate_op predicate_op,
-                                        const value_type_t value);
+                                        const value_type_t right_constant);
+
+void select_op_add_attr_attr_predicate(operator_t *operator,
+                                       const attr_name_t left_attr_name,
+                                       const select_predicate_op predicate_op,
+                                       const attr_name_t right_attr_name);
 
 operator_t *select_op_create(operator_t *source);
 

@@ -136,4 +136,17 @@ operator_t *select_op_create(operator_t *source);
 
 void select_op_destroy(operator_t *operator);
 
+/*
+ * Sort operator sorts tuples by a given attribute in ascending or descending order
+ *  */
+
+typedef enum sort_op_order {
+    SORT_ASC,
+    SORT_DESC,
+} sort_op_order;
+
+operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_op_order sort_order);
+
+void sort_op_destroy(operator_t *operator);
+
 #endif //PIGLETQL_H

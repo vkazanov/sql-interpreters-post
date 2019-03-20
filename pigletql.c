@@ -711,3 +711,79 @@ void select_op_destroy(operator_t *operator)
     free(operator->state);
     free(operator);
 }
+
+/* Sort operator */
+
+typedef struct sort_op_state_t {
+    operator_t *source;
+    /* Attribute to sort tuples by */
+    attr_name_t sort_attr_name;
+    /* Sort order, descending or ascending */
+    sort_op_order sort_order;
+} sort_op_state_t;
+
+void sort_op_open(void *state)
+{
+    sort_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+    source->open(source->state);
+
+    /* TODO: */
+}
+
+tuple_t *sort_op_next(void *state)
+{
+    sort_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+
+    tuple_t *tuple = NULL;
+    /* TODO:  */
+
+    return tuple;
+}
+
+void sort_op_close(void *state)
+{
+    sort_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+    source->close(source->state);
+
+    /* TODO:  */
+}
+
+operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_op_order sort_order)
+{
+    assert(source);
+
+    operator_t *op = calloc(1, sizeof(*op));
+    if (!op)
+        goto op_fail;
+
+    sort_op_state_t *state = calloc(1, sizeof(*state));
+    if (!state)
+        goto state_fail;
+
+    state->source = source;
+    state->sort_order = sort_order;
+    strncpy(state->sort_attr_name, sort_attr_name, MAX_ATTR_NAME_LEN);
+    op->state = state;
+
+    op->open = sort_op_open;
+    op->next = sort_op_next;
+    op->close = sort_op_close;
+
+    return op;
+
+state_fail:
+    free(op);
+op_fail:
+    return NULL;
+}
+
+void sort_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "pigletql.h"
 
@@ -538,6 +539,129 @@ op_fail:
 }
 
 void join_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
+/* Select operator */
+
+#define MAX_SELECT_PREDICATE_NUM 16
+
+typedef struct select_predicate {
+    select_predicate_op op;
+    attr_name_t attr_name;
+    value_type_t constant;
+} select_predicate;
+
+typedef struct select_op_state_t {
+    /* Tuple source to apply filters to */
+    operator_t *source;
+    select_predicate predicates[MAX_SELECT_PREDICATE_NUM];
+    size_t predicate_num;
+} select_op_state_t;
+
+void select_op_open(void *state)
+{
+    select_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+    source->open(source->state);
+}
+
+static bool op_compare_values(select_predicate_op op, value_type_t left_value, value_type_t right_value)
+{
+    switch(op) {
+    case SELECT_GT:
+        return left_value > right_value;
+    case SELECT_LT:
+        return left_value < right_value;
+    case SELECT_EQ:
+        return left_value == right_value;
+    }
+    assert(false);
+}
+
+static bool tuple_satisfies_predicate(tuple_t *tuple, select_predicate *predicate)
+{
+    value_type_t attr_value = tuple_get_attr_value(tuple, predicate->attr_name);
+    value_type_t const_value = predicate->constant;
+    return op_compare_values(predicate->op, attr_value, const_value);
+}
+
+static bool tuple_satisfies_predicates(tuple_t *tuple, select_predicate predicates[], size_t predicate_num)
+{
+    for (size_t pred_i = 0; pred_i < predicate_num; ++pred_i)
+        if (!tuple_satisfies_predicate(tuple, &predicates[pred_i]))
+            return false;
+    return true;
+}
+
+tuple_t *select_op_next(void *state)
+{
+    select_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+
+    tuple_t *tuple = NULL;
+    do {
+        tuple = source->next(source->state);
+    } while (tuple && !tuple_satisfies_predicates(tuple, op_state->predicates, op_state->predicate_num));
+
+    return tuple;
+}
+
+void select_op_close(void *state)
+{
+    select_op_state_t *op_state = (typeof(op_state)) state;
+    operator_t *source = op_state->source;
+    source->close(source->state);
+}
+
+void select_op_add_attr_const_predicate(operator_t *operator,
+                                        const attr_name_t attr_name,
+                                        const select_predicate_op predicate_op,
+                                        const value_type_t value)
+{
+    select_op_state_t *op_state = (typeof(op_state)) operator->state;
+    assert(op_state->predicate_num < MAX_SELECT_PREDICATE_NUM);
+
+    strncpy(op_state->predicates[op_state->predicate_num].attr_name, attr_name, MAX_ATTR_NAME_LEN);
+    op_state->predicates[op_state->predicate_num].op = predicate_op;
+    op_state->predicates[op_state->predicate_num].constant = value;
+
+    op_state->predicate_num++;
+}
+
+operator_t *select_op_create(operator_t *source)
+{
+    assert(source);
+
+    operator_t *op = calloc(1, sizeof(*op));
+    if (!op)
+        goto op_fail;
+
+    select_op_state_t *state = calloc(1, sizeof(*state));
+    if (!state)
+        goto state_fail;
+
+    state->source = source;
+    state->predicate_num = 0;
+    op->state = state;
+
+    op->open = select_op_open;
+    op->next = select_op_next;
+    op->close = select_op_close;
+
+    return op;
+
+state_fail:
+    free(op);
+op_fail:
+    return NULL;
+}
+
+void select_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;

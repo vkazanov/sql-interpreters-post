@@ -112,4 +112,23 @@ operator_t *join_op_create(operator_t *left_source,
 void join_op_destroy(operator_t *operator);
 
 
+/*
+ * Selection operator filters tuples according to a list of predicates
+ *  */
+
+typedef enum select_predicate_op {
+    SELECT_GT,                  /* greater than */
+    SELECT_LT,                  /* less than  */
+    SELECT_EQ                   /* equal */
+} select_predicate_op;
+
+void select_op_add_attr_const_predicate(operator_t *operator,
+                                        const attr_name_t attr_name,
+                                        const select_predicate_op predicate_op,
+                                        const value_type_t value);
+
+operator_t *select_op_create(operator_t *source);
+
+void select_op_destroy(operator_t *operator);
+
 #endif //PIGLETQL_H

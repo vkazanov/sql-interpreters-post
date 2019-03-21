@@ -29,6 +29,8 @@ bool tuple_has_attr(const tuple_t *tuple, const attr_name_t attr_name);
 
 value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_name);
 
+uint16_t tuple_get_attr_num(const tuple_t *tuple);
+
 /*
  * Relation is an in-memory table containing raw tuple data
  *  */
@@ -48,6 +50,8 @@ value_type_t *relation_tuple_values_by_id(const relation_t *rel, uint32_t tuple_
 uint16_t relation_value_pos_by_name(const relation_t *rel, const attr_name_t attr_name);
 
 bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name);
+
+uint16_t relation_get_attr_num(const relation_t *rel);
 
 void relation_destroy(relation_t *relation);
 

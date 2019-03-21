@@ -117,6 +117,34 @@ value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_n
         assert(false);
 }
 
+uint16_t tuple_source_get_attr_num(const tuple_source_t *tuple)
+{
+    return relation_get_attr_num(tuple->relation);
+}
+
+uint16_t tuple_project_get_attr_num(const tuple_project_t *tuple)
+{
+    return tuple->attr_num;
+}
+
+uint16_t tuple_join_get_attr_num(const tuple_join_t *tuple)
+{
+    return tuple_get_attr_num(tuple->left_source_tuple)
+        + tuple_get_attr_num(tuple->right_source_tuple);
+}
+
+uint16_t tuple_get_attr_num(const tuple_t *tuple)
+{
+    if (tuple->tag == TUPLE_SOURCE)
+        return tuple_source_get_attr_num(&tuple->as.source);
+    else if (tuple->tag == TUPLE_PROJECT)
+        return tuple_project_get_attr_num(&tuple->as.project);
+    else if (tuple->tag == TUPLE_JOIN)
+        return tuple_join_get_attr_num(&tuple->as.join);
+    else
+        assert(false);
+}
+
 /*
  * Relation - see pigletql.h for comments
  *  */
@@ -169,6 +197,11 @@ uint16_t relation_value_pos_by_name(const relation_t *rel, const attr_name_t att
         if (strcmp(rel->attr_names[attr_i], attr_name) == 0)
             return attr_i;
     return ATTR_NOT_FOUND;
+}
+
+uint16_t relation_get_attr_num(const relation_t *rel)
+{
+    return rel->attr_num;
 }
 
 bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name)
@@ -728,6 +761,7 @@ void sort_op_open(void *state)
     operator_t *source = op_state->source;
     source->open(source->state);
 
+    source->close(source->state);
     /* TODO: */
 }
 
@@ -745,10 +779,7 @@ tuple_t *sort_op_next(void *state)
 void sort_op_close(void *state)
 {
     sort_op_state_t *op_state = (typeof(op_state)) state;
-    operator_t *source = op_state->source;
-    source->close(source->state);
-
-    /* TODO:  */
+    /* TODO: Free the tmp relation */
 }
 
 operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_op_order sort_order)

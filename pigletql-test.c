@@ -547,6 +547,64 @@ int main(int argc, char *argv[])
         relation_destroy(relation);
     }
 
-    /* TODO: sort order */
+    /* Sort operator */
+    {
+        relation_t *relation = relation_create();
+        assert(relation);
+
+        const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+        const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
+            {9, 02, 03},
+            {5, 12, 13},
+            {7, 22, 23},
+            {2, 50, 30},
+        };
+        const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
+        const uint16_t attr_num = ARRAY_SIZE(attr_names);
+        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        /* Descending order */
+        {
+            operator_t *scan_op = scan_op_create(relation);
+            assert(scan_op);
+
+            operator_t *sort_op = sort_op_create(scan_op, "id", SORT_DESC);
+            assert(sort_op);
+
+            sort_op->open(sort_op->state);
+
+            tuple_t *tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 9);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 7);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 5);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 2);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(!tuple);
+
+            sort_op->close(sort_op->state);
+
+            sort_op_destroy(sort_op);
+            scan_op_destroy(scan_op);
+
+        }
+
+        /* Ascending order */
+        {
+            /* TODO: */
+        }
+
+        relation_destroy(relation);
+    }
     return 0;
 }

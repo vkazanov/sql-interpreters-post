@@ -710,7 +710,40 @@ int main(int argc, char *argv[])
 
         /* Descending order */
         {
-            /* TODO: */
+            operator_t *scan_op = scan_op_create(relation);
+            assert(scan_op);
+
+            operator_t *sort_op = sort_op_create(scan_op, "id", SORT_DESC);
+            assert(sort_op);
+
+            sort_op->open(sort_op->state);
+
+            tuple_t *tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_num(tuple) == 3);
+            assert(tuple_get_attr_value(tuple, "id") == 9);
+            assert(tuple_get_attr_value(tuple, "attr1") == 2);
+            assert(tuple_get_attr_value(tuple, "attr2") == 3);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 7);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 5);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(tuple);
+            assert(tuple_get_attr_value(tuple, "id") == 2);
+
+            tuple = sort_op->next(sort_op->state);
+            assert(!tuple);
+
+            sort_op->close(sort_op->state);
+
+            sort_op_destroy(sort_op);
+            scan_op_destroy(scan_op);
         }
 
         relation_destroy(relation);

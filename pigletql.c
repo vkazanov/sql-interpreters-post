@@ -261,13 +261,17 @@ void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const 
 {
     (void) order;
     uint16_t attr_i = relation_attr_i_by_name(rel, sort_attr_name);
-    int cmptuples(const void *leftp, const void *rightp) {
-        const value_type_t *left = leftp;
-        const value_type_t *right = rightp;
+    int cmptuplesasc(const void *leftp, const void *rightp) {
+        const value_type_t *left = leftp, *right = rightp;
         return (int)left[attr_i] - (int)right[attr_i];
     };
+    int cmptuplesdesc(const void *leftp, const void *rightp) {
+        const value_type_t *left = leftp, *right = rightp;
+        return (int)right[attr_i] - (int)left[attr_i];
+    };
 
-    qsort(rel->tuples, rel->tuple_num, rel->attr_num * sizeof(value_type_t), cmptuples);
+    qsort(rel->tuples, rel->tuple_num, rel->attr_num * sizeof(value_type_t),
+          order == SORT_ASC ? cmptuplesasc : cmptuplesdesc);
 }
 
 value_type_t *relation_tuple_values_by_id(const relation_t *rel, uint32_t tuple_i)

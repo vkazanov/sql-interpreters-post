@@ -1,12 +1,13 @@
-* TODO [7/10] Algebra
+* TODO [8/11] Algebra
 ** DONE Read table from memory
 ** DONE Table scan operator
 ** DONE Projection operator
 ** DONE Union operator
 ** DONE Join operator
 ** DONE Selection operator
+** DONE Sort operator
 ** DONE value_pos -> attr_i
-** TODO Sort operator
-** TODO Read table from a csv file
 ** TODO Separate relation tuple adding/loading and relation metadata definition
+** TODO Read table from a csv file
+** TODO Valgrind the hell out of it
 * TODO SQL

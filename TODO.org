@@ -1,4 +1,4 @@
-* TODO [7/9] Algebra
+* TODO [7/10] Algebra
 ** DONE Read table from memory
 ** DONE Table scan operator
 ** DONE Projection operator
@@ -8,4 +8,5 @@
 ** DONE value_pos -> attr_i
 ** TODO Sort operator
 ** TODO Read table from a csv file
+** TODO Separate relation tuple adding/loading and relation metadata definition
 * TODO SQL

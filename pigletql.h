@@ -16,6 +16,11 @@
 /* maximum attribute name length */
 #define MAX_ATTR_NAME_LEN 256
 
+typedef enum sort_order {
+    SORT_ASC,
+    SORT_DESC,
+} sort_order;
+
 typedef uint32_t value_type_t;  /* a single value type supported */
 typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */
 
@@ -49,7 +54,9 @@ void relation_fill_from_table(relation_t *relation,
                               const uint32_t table_tuple_num,
                               const uint16_t tuple_attr_num);
 
-value_type_t *relation_tuple_values_by_id(const relation_t *rel, uint32_t tuple_i);
+void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order order);
+
+value_type_t *relation_tuple_values_by_id(const relation_t *rel, const uint32_t tuple_i);
 
 uint16_t relation_attr_i_by_name(const relation_t *rel, const attr_name_t attr_name);
 
@@ -152,12 +159,7 @@ void select_op_destroy(operator_t *operator);
  * Sort operator sorts tuples by a given attribute in ascending or descending order
  *  */
 
-typedef enum sort_op_order {
-    SORT_ASC,
-    SORT_DESC,
-} sort_op_order;
-
-operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_op_order sort_order);
+operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_order sort_order);
 
 void sort_op_destroy(operator_t *operator);
 

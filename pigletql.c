@@ -257,6 +257,19 @@ void relation_fill_from_table(
             rel->tuples[tuple_i * attr_num + attr_i] = table[tuple_i * attr_num + attr_i];
 }
 
+void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order order)
+{
+    (void) order;
+    uint16_t attr_i = relation_attr_i_by_name(rel, sort_attr_name);
+    int cmptuples(const void *leftp, const void *rightp) {
+        const value_type_t *left = leftp;
+        const value_type_t *right = rightp;
+        return (int)left[attr_i] - (int)right[attr_i];
+    };
+
+    qsort(rel->tuples, rel->tuple_num, rel->attr_num * sizeof(value_type_t), cmptuples);
+}
+
 value_type_t *relation_tuple_values_by_id(const relation_t *rel, uint32_t tuple_i)
 {
     return &rel->tuples[tuple_i * rel->attr_num];
@@ -858,39 +871,56 @@ typedef struct sort_op_state_t {
     /* Attribute to sort tuples by */
     attr_name_t sort_attr_name;
     /* Sort order, descending or ascending */
-    sort_op_order sort_order;
+    sort_order sort_order;
+
+    /* Temporary relation to be used for sorting*/
+    relation_t *tmp_relation;
+    /* Relation scan op */
+    operator_t *tmp_relation_scan_op;
 } sort_op_state_t;
 
 void sort_op_open(void *state)
 {
     sort_op_state_t *op_state = (typeof(op_state)) state;
     operator_t *source = op_state->source;
-    source->open(source->state);
 
+    op_state->tmp_relation = relation_create();
+
+    /* Materialize a table to be sorted */
+    source->open(source->state);
+    tuple_t *tuple = NULL;
+    while((tuple = source->next(source->state)))
+        relation_append_tuple(op_state->tmp_relation, tuple);
     source->close(source->state);
-    /* TODO: */
+
+    /* Sort it */
+    relation_order_by(op_state->tmp_relation, op_state->sort_attr_name, op_state->sort_order);
+
+    /* Open a scan op on it */
+    op_state->tmp_relation_scan_op = scan_op_create(op_state->tmp_relation);
+    op_state->tmp_relation_scan_op->open(op_state->tmp_relation_scan_op->state);
 }
 
 tuple_t *sort_op_next(void *state)
 {
-    (void) state;
-    /* sort_op_state_t *op_state = (typeof(op_state)) state; */
-    /* operator_t *source = op_state->source; */
+    sort_op_state_t *op_state = (typeof(op_state)) state;
 
-    tuple_t *tuple = NULL;
-    /* TODO:  */
-
-    return tuple;
+    return op_state->tmp_relation_scan_op->next(op_state->tmp_relation_scan_op->state);;
 }
 
 void sort_op_close(void *state)
 {
-    (void) state;
-    /* sort_op_state_t *op_state = (typeof(op_state)) state; */
-    /* TODO: Free the tmp relation */
+    sort_op_state_t *op_state = (typeof(op_state)) state;
+    op_state->tmp_relation_scan_op->close(op_state->tmp_relation_scan_op->state);
+
+    scan_op_destroy(op_state->tmp_relation_scan_op);
+    relation_destroy(op_state->tmp_relation);
+
+    op_state->tmp_relation_scan_op = NULL;
+    op_state->tmp_relation = NULL;
 }
 
-operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_op_order sort_order)
+operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_order order)
 {
     assert(source);
 
@@ -903,7 +933,7 @@ operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_
         goto state_fail;
 
     state->source = source;
-    state->sort_order = sort_order;
+    state->sort_order = order;
     strncpy(state->sort_attr_name, sort_attr_name, MAX_ATTR_NAME_LEN);
     op->state = state;
 

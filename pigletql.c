@@ -19,7 +19,7 @@ typedef struct tuple_source_t {
     /* A reference to a relation containing the tuple */
     const relation_t *relation;
     /* A reference to the values in the relation containing the tuple */
-    value_type_t *values;
+    uint32_t tuple_i;
 } tuple_source_t;
 
 /* A projected tuple is a reference to another tuple giving access to a subset of referenced tuple
@@ -84,7 +84,7 @@ static value_type_t tuple_source_get_attr_value(const tuple_source_t *source, co
 {
     const relation_t *relation = source->relation;
     uint16_t attr_i = relation_attr_i_by_name(relation, attr_name);
-    return source->values[attr_i];
+    return relation_tuple_values_by_id(relation, source->tuple_i)[attr_i];
 }
 
 static value_type_t tuple_project_get_attr_value(const tuple_project_t *project, const attr_name_t attr_name)
@@ -148,7 +148,7 @@ uint16_t tuple_get_attr_num(const tuple_t *tuple)
 
 uint16_t tuple_source_get_attr_value_by_i(const tuple_source_t *tuple, const uint16_t attr_i)
 {
-    return tuple->values[attr_i];
+    return relation_tuple_values_by_id(tuple->relation, tuple->tuple_i)[attr_i];
 }
 
 uint16_t tuple_project_get_attr_value_by_i(const tuple_project_t *tuple, const uint16_t attr_i)
@@ -180,6 +180,40 @@ uint16_t tuple_get_attr_value_by_i(const tuple_t *tuple, const uint16_t attr_i)
         assert(false);
 }
 
+const char *tuple_source_get_attr_name_by_i(const tuple_source_t *tuple, const uint16_t attr_i)
+{
+    return relation_attr_name_by_i(tuple->relation, attr_i);
+}
+
+const char *tuple_project_get_attr_name_by_i(const tuple_project_t *tuple, const uint16_t attr_i)
+{
+    assert(attr_i < tuple->attr_num);
+
+    return &tuple->attr_names[attr_i][0];
+}
+
+const char *tuple_join_get_attr_name_by_i(const tuple_join_t *tuple, const uint16_t attr_i)
+{
+    assert(attr_i < tuple_join_get_attr_num(tuple));
+    const uint16_t left_source_attr_num = tuple_get_attr_num(tuple->left_source_tuple);
+    if (attr_i < left_source_attr_num)
+        return tuple_get_attr_name_by_i(tuple->left_source_tuple, attr_i);
+    else
+        return tuple_get_attr_name_by_i(tuple->right_source_tuple, attr_i - left_source_attr_num);
+}
+
+const char *tuple_get_attr_name_by_i(const tuple_t *tuple, const uint16_t attr_i)
+{
+    if (tuple->tag == TUPLE_SOURCE)
+        return tuple_source_get_attr_name_by_i(&tuple->as.source, attr_i);
+    else if (tuple->tag == TUPLE_PROJECT)
+        return tuple_project_get_attr_name_by_i(&tuple->as.project, attr_i);
+    else if (tuple->tag == TUPLE_JOIN)
+        return tuple_join_get_attr_name_by_i(&tuple->as.join, attr_i);
+    else
+        assert(false);
+}
+
 /*
  * Relation - see pigletql.h for comments
  *  */
@@ -190,6 +224,7 @@ struct relation_t {
 
     value_type_t *tuples;
     uint32_t tuple_num;
+    uint32_t tuple_slots;
 };
 
 relation_t *relation_create(void)
@@ -214,6 +249,7 @@ void relation_fill_from_table(
             strncpy(rel->attr_names[attr_i], attr_names[attr_i], MAX_ATTR_NAME_LEN);
 
     rel->tuple_num = tuple_num;
+    rel->tuple_slots = tuple_num;
     rel->tuples = calloc(1, sizeof(value_type_t) * attr_num * tuple_num);
     assert(rel->tuples);
     for(size_t tuple_i = 0; tuple_i < tuple_num; tuple_i++)
@@ -234,6 +270,11 @@ uint16_t relation_attr_i_by_name(const relation_t *rel, const attr_name_t attr_n
     return ATTR_NOT_FOUND;
 }
 
+const char *relation_attr_name_by_i(const relation_t *rel, const uint16_t attr_i)
+{
+    return &rel->attr_names[attr_i][0];
+}
+
 uint16_t relation_get_attr_num(const relation_t *rel)
 {
     return rel->attr_num;
@@ -242,6 +283,36 @@ uint16_t relation_get_attr_num(const relation_t *rel)
 bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name)
 {
     return relation_attr_i_by_name(rel, attr_name) != ATTR_NOT_FOUND;
+}
+
+void relation_append_tuple(relation_t *rel, const tuple_t *tuple)
+{
+    /* check compatibility when the relation was not initialised */
+    uint16_t tuple_attr_num = tuple_get_attr_num(tuple);
+    if (rel->attr_num > 0)
+        assert(tuple_attr_num == rel->attr_num);
+    else {
+        /* The relation was not initialized yet, so we init it using the tuple*/
+        rel->attr_num = tuple_get_attr_num(tuple);
+        for (size_t attr_i = 0; attr_i < tuple_attr_num; ++attr_i)
+            strncpy(rel->attr_names[attr_i], tuple_get_attr_name_by_i(tuple, attr_i), MAX_ATTR_NAME_LEN);
+    }
+
+    /* check available space and extend if needed */
+    if (rel->tuple_num >= rel->tuple_slots) {
+        rel->tuple_slots += 1000;
+        const size_t bytes_needed = rel->tuple_slots * tuple_attr_num * sizeof(value_type_t);
+        rel->tuples = realloc(rel->tuples, bytes_needed);
+        assert(rel->tuples);
+    }
+
+    /* copy tuple data */
+    value_type_t *tuple_slot = &rel->tuples[rel->tuple_num * tuple_attr_num];
+    for (size_t attr_i = 0; attr_i < tuple_attr_num; attr_i++)
+        tuple_slot[attr_i] = tuple_get_attr_value_by_i(tuple, attr_i);
+
+    /* Grow the relation */
+    rel->tuple_num++;
 }
 
 void relation_destroy(relation_t *rel)
@@ -273,7 +344,7 @@ void scan_op_open(void *state)
     scan_op_state_t *op_state = (typeof(op_state)) state;
     op_state->next_tuple_i = 0;
     tuple_t *current_tuple = &op_state->current_tuple;
-    current_tuple->as.source.values = NULL;
+    current_tuple->as.source.tuple_i = 0;
 }
 
 tuple_t *scan_op_next(void *state)
@@ -283,7 +354,7 @@ tuple_t *scan_op_next(void *state)
         return NULL;
     uint32_t current_i = op_state->next_tuple_i;
     tuple_source_t *source_tuple = &op_state->current_tuple.as.source;
-    source_tuple->values = relation_tuple_values_by_id(op_state->relation, current_i);
+    source_tuple->tuple_i = current_i;
 
     op_state->next_tuple_i++;
 
@@ -295,7 +366,7 @@ void scan_op_close(void *state)
     scan_op_state_t *op_state = (typeof(op_state)) state;
     op_state->next_tuple_i = 0;
     tuple_t *current_tuple = &op_state->current_tuple;
-    current_tuple->as.source.values = NULL;
+    current_tuple->as.source.tuple_i = 0;
 }
 
 operator_t *scan_op_create(const relation_t *relation)
@@ -311,7 +382,7 @@ operator_t *scan_op_create(const relation_t *relation)
     state->relation = relation;
     state->next_tuple_i = 0;
     state->current_tuple.tag = TUPLE_SOURCE;
-    state->current_tuple.as.source.values = NULL;
+    state->current_tuple.as.source.tuple_i = 0;
     state->current_tuple.as.source.relation = relation;
     op->state = state;
 
@@ -802,8 +873,9 @@ void sort_op_open(void *state)
 
 tuple_t *sort_op_next(void *state)
 {
-    sort_op_state_t *op_state = (typeof(op_state)) state;
-    operator_t *source = op_state->source;
+    (void) state;
+    /* sort_op_state_t *op_state = (typeof(op_state)) state; */
+    /* operator_t *source = op_state->source; */
 
     tuple_t *tuple = NULL;
     /* TODO:  */
@@ -813,7 +885,8 @@ tuple_t *sort_op_next(void *state)
 
 void sort_op_close(void *state)
 {
-    sort_op_state_t *op_state = (typeof(op_state)) state;
+    (void) state;
+    /* sort_op_state_t *op_state = (typeof(op_state)) state; */
     /* TODO: Free the tmp relation */
 }
 

@@ -25,30 +25,30 @@ int main(int argc, char *argv[])
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
         relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
 
-        const uint16_t id_pos = relation_value_pos_by_name(relation, "id");
-        const uint16_t attr1_pos = relation_value_pos_by_name(relation, "attr1");
-        const uint16_t attr2_pos = relation_value_pos_by_name(relation, "attr2");
+        const uint16_t id_i = relation_attr_i_by_name(relation, "id");
+        const uint16_t attr1_i = relation_attr_i_by_name(relation, "attr1");
+        const uint16_t attr2_i = relation_attr_i_by_name(relation, "attr2");
 
         /* Make sure all the values are there */
         value_type_t *tuple_start = relation_tuple_values_by_id(relation, 0);
-        assert(tuple_start[id_pos] == 0);
-        assert(tuple_start[attr1_pos] == 2);
-        assert(tuple_start[attr2_pos] == 3);
+        assert(tuple_start[id_i] == 0);
+        assert(tuple_start[attr1_i] == 2);
+        assert(tuple_start[attr2_i] == 3);
 
         tuple_start = relation_tuple_values_by_id(relation, 1);
-        assert(tuple_start[id_pos] == 1);
-        assert(tuple_start[attr1_pos] == 12);
-        assert(tuple_start[attr2_pos] == 13);
+        assert(tuple_start[id_i] == 1);
+        assert(tuple_start[attr1_i] == 12);
+        assert(tuple_start[attr2_i] == 13);
 
         tuple_start = relation_tuple_values_by_id(relation, 2);
-        assert(tuple_start[id_pos] == 2);
-        assert(tuple_start[attr1_pos] == 22);
-        assert(tuple_start[attr2_pos] == 23);
+        assert(tuple_start[id_i] == 2);
+        assert(tuple_start[attr1_i] == 22);
+        assert(tuple_start[attr2_i] == 23);
 
         tuple_start = relation_tuple_values_by_id(relation, 3);
-        assert(tuple_start[id_pos] == 3);
-        assert(tuple_start[attr1_pos] == 32);
-        assert(tuple_start[attr2_pos] == 33);
+        assert(tuple_start[id_i] == 3);
+        assert(tuple_start[attr1_i] == 32);
+        assert(tuple_start[attr2_i] == 33);
 
         relation_destroy(relation);
     }

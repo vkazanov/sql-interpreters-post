@@ -83,8 +83,8 @@ bool tuple_has_attr(const tuple_t *tuple, const attr_name_t attr_name)
 static value_type_t tuple_source_get_attr_value(const tuple_source_t *source, const attr_name_t attr_name)
 {
     const relation_t *relation = source->relation;
-    uint16_t value_pos = relation_value_pos_by_name(relation, attr_name);
-    return source->values[value_pos];
+    uint16_t attr_i = relation_attr_i_by_name(relation, attr_name);
+    return source->values[attr_i];
 }
 
 static value_type_t tuple_project_get_attr_value(const tuple_project_t *project, const attr_name_t attr_name)
@@ -117,6 +117,7 @@ value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_n
         assert(false);
 }
 
+
 uint16_t tuple_source_get_attr_num(const tuple_source_t *tuple)
 {
     return relation_get_attr_num(tuple->relation);
@@ -141,6 +142,40 @@ uint16_t tuple_get_attr_num(const tuple_t *tuple)
         return tuple_project_get_attr_num(&tuple->as.project);
     else if (tuple->tag == TUPLE_JOIN)
         return tuple_join_get_attr_num(&tuple->as.join);
+    else
+        assert(false);
+}
+
+uint16_t tuple_source_get_attr_value_by_i(const tuple_source_t *tuple, const uint16_t attr_i)
+{
+    return tuple->values[attr_i];
+}
+
+uint16_t tuple_project_get_attr_value_by_i(const tuple_project_t *tuple, const uint16_t attr_i)
+{
+    assert(attr_i < tuple->attr_num);
+
+    return tuple_project_get_attr_value(tuple, tuple->attr_names[attr_i]);
+}
+
+uint16_t tuple_join_get_attr_value_by_i(const tuple_join_t *tuple, const uint16_t attr_i)
+{
+    assert(attr_i < tuple_join_get_attr_num(tuple));
+    const uint16_t left_source_attr_num = tuple_get_attr_num(tuple->left_source_tuple);
+    if (attr_i < left_source_attr_num)
+        return tuple_get_attr_value_by_i(tuple->left_source_tuple, attr_i);
+    else
+        return tuple_get_attr_value_by_i(tuple->right_source_tuple, attr_i - left_source_attr_num);
+}
+
+uint16_t tuple_get_attr_value_by_i(const tuple_t *tuple, const uint16_t attr_i)
+{
+    if (tuple->tag == TUPLE_SOURCE)
+        return tuple_source_get_attr_value_by_i(&tuple->as.source, attr_i);
+    else if (tuple->tag == TUPLE_PROJECT)
+        return tuple_project_get_attr_value_by_i(&tuple->as.project, attr_i);
+    else if (tuple->tag == TUPLE_JOIN)
+        return tuple_join_get_attr_value_by_i(&tuple->as.join, attr_i);
     else
         assert(false);
 }
@@ -191,7 +226,7 @@ value_type_t *relation_tuple_values_by_id(const relation_t *rel, uint32_t tuple_
     return &rel->tuples[tuple_i * rel->attr_num];
 }
 
-uint16_t relation_value_pos_by_name(const relation_t *rel, const attr_name_t attr_name)
+uint16_t relation_attr_i_by_name(const relation_t *rel, const attr_name_t attr_name)
 {
     for (size_t attr_i = 0; attr_i < rel->attr_num; attr_i++)
         if (strcmp(rel->attr_names[attr_i], attr_name) == 0)
@@ -206,7 +241,7 @@ uint16_t relation_get_attr_num(const relation_t *rel)
 
 bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name)
 {
-    return relation_value_pos_by_name(rel, attr_name) != ATTR_NOT_FOUND;
+    return relation_attr_i_by_name(rel, attr_name) != ATTR_NOT_FOUND;
 }
 
 void relation_destroy(relation_t *rel)

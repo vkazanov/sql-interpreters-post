@@ -1,10 +1,11 @@
-* TODO [6/8] Algebra
+* TODO [7/9] Algebra
 ** DONE Read table from memory
 ** DONE Table scan operator
 ** DONE Projection operator
 ** DONE Union operator
 ** DONE Join operator
 ** DONE Selection operator
+** DONE value_pos -> attr_i
 ** TODO Sort operator
 ** TODO Read table from a csv file
 * TODO SQL

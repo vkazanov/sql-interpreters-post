@@ -108,8 +108,11 @@ int main(int argc, char *argv[])
             assert(tuple_has_attr(tuple, "attr1"));
             assert(tuple_has_attr(tuple, "attr2"));
             assert(tuple_get_attr_value(tuple, "id") == 0);
+            assert(tuple_get_attr_value_by_i(tuple, 0) == 0);
             assert(tuple_get_attr_value(tuple, "attr1") == 2);
+            assert(tuple_get_attr_value_by_i(tuple, 1) == 2);
             assert(tuple_get_attr_value(tuple, "attr2") == 3);
+            assert(tuple_get_attr_value_by_i(tuple, 2) == 3);
 
             tuple = scan_op->next(scan_op->state);
             assert(tuple);
@@ -180,7 +183,9 @@ int main(int argc, char *argv[])
             assert(tuple_has_attr(tuple, "attr1"));
             assert(tuple_has_attr(tuple, "attr2"));
             assert(tuple_get_attr_value(tuple, "attr1") == 2);
+            assert(tuple_get_attr_value_by_i(tuple, 0) == 2);
             assert(tuple_get_attr_value(tuple, "attr2") == 3);
+            assert(tuple_get_attr_value_by_i(tuple, 1) == 3);
 
             tuple = proj_op->next(proj_op->state);
             assert(tuple);
@@ -261,8 +266,11 @@ int main(int argc, char *argv[])
             assert(tuple_get_attr_num(tuple) == 3);
 
             assert(tuple_get_attr_value(tuple, "id") == 0);
+            assert(tuple_get_attr_value_by_i(tuple, 0) == 0);
             assert(tuple_get_attr_value(tuple, "attr1") == 2);
+            assert(tuple_get_attr_value_by_i(tuple, 1) == 2);
             assert(tuple_get_attr_value(tuple, "attr2") == 3);
+            assert(tuple_get_attr_value_by_i(tuple, 2) == 3);
 
             tuple = union_op->next(union_op->state);
             assert(tuple);
@@ -361,10 +369,15 @@ int main(int argc, char *argv[])
             assert(tuple_get_attr_num(tuple) == 5);
 
             assert(tuple_get_attr_value(tuple, "attr1") == 1);
+            assert(tuple_get_attr_value_by_i(tuple, 0) == 1);
             assert(tuple_get_attr_value(tuple, "attr2") == 2);
+            assert(tuple_get_attr_value_by_i(tuple, 1) == 2);
             assert(tuple_get_attr_value(tuple, "attr3") == 31);
+            assert(tuple_get_attr_value_by_i(tuple, 2) == 31);
             assert(tuple_get_attr_value(tuple, "attr4") == 32);
+            assert(tuple_get_attr_value_by_i(tuple, 3) == 32);
             assert(tuple_get_attr_value(tuple, "attr5") == 33);
+            assert(tuple_get_attr_value_by_i(tuple, 4) == 33);
 
             tuple = join_op->next(join_op->state);
             assert(tuple);
@@ -459,6 +472,7 @@ int main(int argc, char *argv[])
             assert(tuple_get_attr_num(tuple) == 3);
             assert(tuple_has_attr(tuple, "id"));
             assert(tuple_get_attr_value(tuple, "id") == 1);
+            assert(tuple_get_attr_value_by_i(tuple, 0) == 1);
 
             tuple = select_op->next(select_op->state);
             assert(tuple);

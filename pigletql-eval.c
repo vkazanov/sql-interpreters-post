@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "pigletql.h"
+#include "pigletql-eval.h"
 
 /*
  * Tuple represents either a tuple itself, a tuple projection or a tuple join

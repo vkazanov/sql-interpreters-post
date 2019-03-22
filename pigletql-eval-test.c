@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "pigletql.h"
+#include "pigletql-eval.h"
 
 #define ARRAY_SIZE(arr) sizeof(arr) / sizeof((arr)[0])
 

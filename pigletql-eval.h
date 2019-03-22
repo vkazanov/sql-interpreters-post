@@ -1,5 +1,5 @@
-#ifndef PIGLETQL_H
-#define PIGLETQL_H
+#ifndef PIGLETQL_EVAL_H
+#define PIGLETQL_EVAL_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -166,4 +166,4 @@ operator_t *sort_op_create(operator_t *source,
 
 void sort_op_destroy(operator_t *operator);
 
-#endif //PIGLETQL_H
+#endif //PIGLETQL_EVAL_H

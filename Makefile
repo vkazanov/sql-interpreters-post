@@ -3,8 +3,9 @@ CFLAGS = -std=gnu11 -O2 -g
 
 all: test
 
-test: pigletql-eval-test
+test: pigletql-eval-test pigletql-parser-test
 	./pigletql-eval-test
+	./pigletql-parser-test
 
 # pigletql: pigletql.c
 # 	$(CC) $(CFLAGS) $^ -o $@
@@ -12,7 +13,10 @@ test: pigletql-eval-test
 pigletql-eval-test: pigletql-eval-test.c pigletql-eval.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-clean:
-	rm -vf pigletql pigletql-eval-test
+pigletql-parser-test: pigletql-parser-test.c pigletql-parser.c
+	$(CC) $(CFLAGS) $^ -o $@
 
-.PHONY: all clean pigletql-test
+clean:
+	rm -vf pigletql pigletql-eval-test pigletql-parser-test
+
+.PHONY: all clean pigletql-eval-test pigletql-parser-test

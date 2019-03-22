@@ -1,0 +1,4 @@
+#ifndef PIGLETQL_PARSER_H
+#define PIGLETQL_PARSER_H
+
+#endif //PIGLETQL_PARSER_H

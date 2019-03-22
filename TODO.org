@@ -19,6 +19,7 @@
 ** TODO SELECT - join
 ** TODO SELECT - order by
 ** TODO SELECT - order by asc/desc
+** TODO comments where needed
 * TODO Mention all the papers/books
 
   - book with a Java-based example

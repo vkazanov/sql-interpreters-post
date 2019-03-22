@@ -227,34 +227,33 @@ struct relation_t {
     uint32_t tuple_slots;
 };
 
-relation_t *relation_create(void)
+relation_t *relation_create(const attr_name_t *attr_names, const uint16_t attr_num)
 {
     relation_t *rel = calloc(1, sizeof(*rel));
     if (!rel)
         return NULL;
     *rel = (typeof(*rel)) { 0 };
+
+    rel->attr_num = attr_num;
+    for(size_t attr_i = 0; attr_i < attr_num; attr_i++)
+        strncpy(rel->attr_names[attr_i], attr_names[attr_i], MAX_ATTR_NAME_LEN);
+
     return rel;
 }
 
 void relation_fill_from_table(
     relation_t *rel,
     const value_type_t *table,
-    const attr_name_t *attr_names,
-    const uint32_t tuple_num,
-    const uint16_t attr_num
-)
+    const uint32_t tuple_num)
 {
-    rel->attr_num = attr_num;
-    for(size_t attr_i = 0; attr_i < attr_num; attr_i++)
-            strncpy(rel->attr_names[attr_i], attr_names[attr_i], MAX_ATTR_NAME_LEN);
-
     rel->tuple_num = tuple_num;
     rel->tuple_slots = tuple_num;
-    rel->tuples = calloc(1, sizeof(value_type_t) * attr_num * tuple_num);
+    rel->tuples = calloc(1, sizeof(value_type_t) * rel->attr_num * tuple_num);
     assert(rel->tuples);
+
     for(size_t tuple_i = 0; tuple_i < tuple_num; tuple_i++)
-        for(size_t attr_i = 0; attr_i < attr_num; attr_i++)
-            rel->tuples[tuple_i * attr_num + attr_i] = table[tuple_i * attr_num + attr_i];
+        for(size_t attr_i = 0; attr_i < rel->attr_num; attr_i++)
+            rel->tuples[tuple_i * rel->attr_num + attr_i] = table[tuple_i * rel->attr_num + attr_i];
 }
 
 void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order order)
@@ -304,16 +303,11 @@ bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name)
 
 void relation_append_tuple(relation_t *rel, const tuple_t *tuple)
 {
-    /* check compatibility when the relation was not initialised */
+    /* check attribute compatibility  */
     uint16_t tuple_attr_num = tuple_get_attr_num(tuple);
-    if (rel->attr_num > 0)
-        assert(tuple_attr_num == rel->attr_num);
-    else {
-        /* The relation was not initialized yet, so we init it using the tuple*/
-        rel->attr_num = tuple_get_attr_num(tuple);
-        for (size_t attr_i = 0; attr_i < tuple_attr_num; ++attr_i)
-            strncpy(rel->attr_names[attr_i], tuple_get_attr_name_by_i(tuple, attr_i), MAX_ATTR_NAME_LEN);
-    }
+    assert(tuple_attr_num == rel->attr_num);
+    for (size_t attr_i = 0; attr_i < tuple_attr_num; ++attr_i)
+        assert(strncmp(rel->attr_names[attr_i], tuple_get_attr_name_by_i(tuple, attr_i), MAX_ATTR_NAME_LEN) == 0);
 
     /* check available space and extend if needed */
     if (rel->tuple_num >= rel->tuple_slots) {
@@ -330,6 +324,14 @@ void relation_append_tuple(relation_t *rel, const tuple_t *tuple)
 
     /* Grow the relation */
     rel->tuple_num++;
+}
+
+void relation_reset(relation_t *rel)
+{
+    rel->tuple_num = 0;
+    rel->tuple_slots = 0;
+    const size_t bytes_needed = rel->tuple_slots * rel->attr_num * sizeof(value_type_t);
+    rel->tuples = realloc(rel->tuples, bytes_needed);
 }
 
 void relation_destroy(relation_t *rel)
@@ -888,8 +890,6 @@ void sort_op_open(void *state)
     sort_op_state_t *op_state = (typeof(op_state)) state;
     operator_t *source = op_state->source;
 
-    op_state->tmp_relation = relation_create();
-
     /* Materialize a table to be sorted */
     source->open(source->state);
     tuple_t *tuple = NULL;
@@ -901,7 +901,6 @@ void sort_op_open(void *state)
     relation_order_by(op_state->tmp_relation, op_state->sort_attr_name, op_state->sort_order);
 
     /* Open a scan op on it */
-    op_state->tmp_relation_scan_op = scan_op_create(op_state->tmp_relation);
     op_state->tmp_relation_scan_op->open(op_state->tmp_relation_scan_op->state);
 }
 
@@ -917,14 +916,14 @@ void sort_op_close(void *state)
     sort_op_state_t *op_state = (typeof(op_state)) state;
     op_state->tmp_relation_scan_op->close(op_state->tmp_relation_scan_op->state);
 
-    scan_op_destroy(op_state->tmp_relation_scan_op);
-    relation_destroy(op_state->tmp_relation);
-
-    op_state->tmp_relation_scan_op = NULL;
-    op_state->tmp_relation = NULL;
+    /* we keep the temporary relation but drop all the tuples in it */
+    relation_reset(op_state->tmp_relation);
 }
 
-operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_order order)
+operator_t *sort_op_create(operator_t *source,
+                           relation_t *tmp_relation,
+                           attr_name_t sort_attr_name,
+                           sort_order order)
 {
     assert(source);
 
@@ -935,6 +934,10 @@ operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_
     sort_op_state_t *state = calloc(1, sizeof(*state));
     if (!state)
         goto state_fail;
+
+    relation_reset(tmp_relation);
+    state->tmp_relation = tmp_relation;
+    state->tmp_relation_scan_op = scan_op_create(state->tmp_relation);
 
     state->source = source;
     state->sort_order = order;
@@ -957,6 +960,8 @@ void sort_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;
+    sort_op_state_t *state = operator->state;
+    scan_op_destroy(state->tmp_relation_scan_op);
     free(operator->state);
     free(operator);
 }

@@ -46,13 +46,11 @@ const char *tuple_get_attr_name_by_i(const tuple_t *tuple, const uint16_t attr_i
 
 typedef struct relation_t relation_t;
 
-relation_t *relation_create(void);
+relation_t *relation_create(const attr_name_t *attr_names, const uint16_t attr_num);
 
 void relation_fill_from_table(relation_t *relation,
                               const value_type_t *table,
-                              const attr_name_t *tuple_attr_names,
-                              const uint32_t table_tuple_num,
-                              const uint16_t tuple_attr_num);
+                              const uint32_t table_tuple_num);
 
 void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order order);
 
@@ -67,6 +65,8 @@ bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name);
 uint16_t relation_get_attr_num(const relation_t *rel);
 
 void relation_append_tuple(relation_t *rel, const tuple_t *tuple);
+
+void relation_reset(relation_t *relation);
 
 void relation_destroy(relation_t *relation);
 
@@ -159,7 +159,10 @@ void select_op_destroy(operator_t *operator);
  * Sort operator sorts tuples by a given attribute in ascending or descending order
  *  */
 
-operator_t *sort_op_create(operator_t *source, attr_name_t sort_attr_name, sort_order sort_order);
+operator_t *sort_op_create(operator_t *source,
+                           relation_t *tmp_relation,
+                           attr_name_t sort_attr_name,
+                           sort_order order);
 
 void sort_op_destroy(operator_t *operator);
 

@@ -11,8 +11,6 @@ int main(int argc, char *argv[])
 
     /* Check relation loaded from an in-memory table */
     {
-        relation_t *relation = relation_create();
-        assert(relation);
 
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
@@ -23,7 +21,11 @@ int main(int argc, char *argv[])
         };
         const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
-        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        relation_t *relation = relation_create(attr_names, attr_num);
+        assert(relation);
+
+        relation_fill_from_table(relation, &tuple_table[0][0], tuple_num);
 
         const uint16_t id_i = relation_attr_i_by_name(relation, "id");
         const uint16_t attr1_i = relation_attr_i_by_name(relation, "attr1");
@@ -55,8 +57,6 @@ int main(int argc, char *argv[])
 
     /* Check the basic relation scan operator */
     {
-        relation_t *relation = relation_create();
-        assert(relation);
 
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
@@ -67,7 +67,11 @@ int main(int argc, char *argv[])
         };
         const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
-        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        relation_t *relation = relation_create(attr_names, attr_num);
+        assert(relation);
+
+        relation_fill_from_table(relation, &tuple_table[0][0], tuple_num);
 
         /* Count the tuples twice */
         {
@@ -146,8 +150,6 @@ int main(int argc, char *argv[])
 
     /* Scan relation tuples into another relation */
     {
-        relation_t *relation_source = relation_create();
-        assert(relation_source);
 
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
@@ -159,9 +161,12 @@ int main(int argc, char *argv[])
         const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
 
-        relation_fill_from_table(relation_source, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+        relation_t *relation_source = relation_create(attr_names, attr_num);
+        assert(relation_source);
 
-        relation_t *relation_target = relation_create();
+        relation_fill_from_table(relation_source, &tuple_table[0][0], tuple_num);
+
+        relation_t *relation_target = relation_create(attr_names, attr_num);
         /* Scan the source and fill the target */
         {
             operator_t *scan_op_source = scan_op_create(relation_source);
@@ -231,8 +236,6 @@ int main(int argc, char *argv[])
 
     /* The projection operator */
     {
-        relation_t *relation = relation_create();
-        assert(relation);
 
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
@@ -243,7 +246,11 @@ int main(int argc, char *argv[])
         };
         const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
-        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        relation_t *relation = relation_create(attr_names, attr_num);
+        assert(relation);
+
+        relation_fill_from_table(relation, &tuple_table[0][0], tuple_num);
 
         /* Count the tuples, check attributes */
         {
@@ -313,10 +320,6 @@ int main(int argc, char *argv[])
 
     /* union operator */
     {
-        relation_t *left_relation = relation_create();
-        relation_t *right_relation = relation_create();
-        assert(left_relation);
-        assert(right_relation);
 
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
@@ -332,8 +335,13 @@ int main(int argc, char *argv[])
         const uint32_t left_tuple_num = ARRAY_SIZE(left_tuple_table);
         const uint32_t right_tuple_num = ARRAY_SIZE(right_tuple_table);
 
-        relation_fill_from_table(left_relation, &left_tuple_table[0][0], attr_names, left_tuple_num, attr_num);
-        relation_fill_from_table(right_relation, &right_tuple_table[0][0], attr_names, right_tuple_num, attr_num);
+        relation_t *left_relation = relation_create(attr_names, attr_num);
+        relation_t *right_relation = relation_create(attr_names, attr_num);
+        assert(left_relation);
+        assert(right_relation);
+
+        relation_fill_from_table(left_relation, &left_tuple_table[0][0], left_tuple_num);
+        relation_fill_from_table(right_relation, &right_tuple_table[0][0], right_tuple_num);
 
         {
             operator_t *left_scan_op = scan_op_create(left_relation);
@@ -401,10 +409,6 @@ int main(int argc, char *argv[])
 
     /* Join operator */
     {
-        relation_t *left_relation = relation_create();
-        relation_t *right_relation = relation_create();
-        assert(left_relation);
-        assert(right_relation);
 
         const attr_name_t left_attr_names[] = {"attr1", "attr2"};
         const uint16_t left_attr_num = ARRAY_SIZE(left_attr_names);
@@ -423,19 +427,20 @@ int main(int argc, char *argv[])
         };
         const uint32_t right_tuple_num = ARRAY_SIZE(right_tuple_table);
 
+        relation_t *left_relation = relation_create(left_attr_names, left_attr_num);
+        relation_t *right_relation = relation_create(right_attr_names, right_attr_num);
+        assert(left_relation);
+        assert(right_relation);
+
         relation_fill_from_table(
             left_relation,
             &left_tuple_table[0][0],
-            left_attr_names,
-            left_tuple_num,
-            left_attr_num
+            left_tuple_num
         );
         relation_fill_from_table(
             right_relation,
             &right_tuple_table[0][0],
-            right_attr_names,
-            right_tuple_num,
-            right_attr_num
+            right_tuple_num
         );
 
         {
@@ -525,8 +530,6 @@ int main(int argc, char *argv[])
 
     /* Selection operator (attr to const comparison) */
     {
-        relation_t *relation = relation_create();
-        assert(relation);
 
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
@@ -537,7 +540,11 @@ int main(int argc, char *argv[])
         };
         const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
-        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        relation_t *relation = relation_create(attr_names, attr_num);
+        assert(relation);
+
+        relation_fill_from_table(relation, &tuple_table[0][0], tuple_num);
 
         {
             operator_t *scan_op = scan_op_create(relation);
@@ -604,9 +611,6 @@ int main(int argc, char *argv[])
 
     /* Selection operator (attr to attr comparison) */
     {
-        relation_t *relation = relation_create();
-        assert(relation);
-
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const value_type_t tuple_table[5][ARRAY_SIZE(attr_names)] = {
             {0, 02, 03},
@@ -617,7 +621,11 @@ int main(int argc, char *argv[])
         };
         const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
-        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        relation_t *relation = relation_create(attr_names, attr_num);
+        assert(relation);
+
+        relation_fill_from_table(relation, &tuple_table[0][0], tuple_num);
 
         /* A single check */
         {
@@ -656,9 +664,6 @@ int main(int argc, char *argv[])
 
     /* Sort operator */
     {
-        relation_t *relation = relation_create();
-        assert(relation);
-
         const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
         const value_type_t tuple_table[4][ARRAY_SIZE(attr_names)] = {
             {9, 02, 03},
@@ -668,14 +673,20 @@ int main(int argc, char *argv[])
         };
         const uint32_t tuple_num = ARRAY_SIZE(tuple_table);
         const uint16_t attr_num = ARRAY_SIZE(attr_names);
-        relation_fill_from_table(relation, &tuple_table[0][0], attr_names, tuple_num, attr_num);
+
+        relation_t *relation = relation_create(attr_names, attr_num);
+        assert(relation);
+        relation_t *tmp_relation = relation_create(attr_names, attr_num);
+        assert(tmp_relation);
+
+        relation_fill_from_table(relation, &tuple_table[0][0], tuple_num);
 
         /* Ascending order */
         {
             operator_t *scan_op = scan_op_create(relation);
             assert(scan_op);
 
-            operator_t *sort_op = sort_op_create(scan_op, "id", SORT_ASC);
+            operator_t *sort_op = sort_op_create(scan_op, tmp_relation, "id", SORT_ASC);
             assert(sort_op);
 
             sort_op->open(sort_op->state);
@@ -713,7 +724,7 @@ int main(int argc, char *argv[])
             operator_t *scan_op = scan_op_create(relation);
             assert(scan_op);
 
-            operator_t *sort_op = sort_op_create(scan_op, "id", SORT_DESC);
+            operator_t *sort_op = sort_op_create(scan_op, tmp_relation, "id", SORT_DESC);
             assert(sort_op);
 
             sort_op->open(sort_op->state);
@@ -747,6 +758,7 @@ int main(int argc, char *argv[])
         }
 
         relation_destroy(relation);
+        relation_destroy(tmp_relation);
     }
     return 0;
 }

@@ -9,8 +9,9 @@
 ** DONE value_pos -> attr_i
 ** DONE Separate relation tuple adding/loading and relation metadata definition
 ** DONE Valgrind the hell out of it
-* TODO [0/9] SQL
-** TODO parser scaffolding
+* TODO [1/11] SQL
+** DONE scanner
+** TODO parser
 ** TODO CREATE TABLE
 ** TODO DESCRIBE TABLE
 ** TODO INSERT INTO

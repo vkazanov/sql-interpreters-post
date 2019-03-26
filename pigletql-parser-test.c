@@ -76,19 +76,24 @@ int main(int argc, char *argv[])
 
     /* Basic SELECT queries */
     {
-        const char *query_str = "SELECT attr1 FROM table;";
+        const char *query_str = "SELECT attr1 FROM table1;";
 
         scanner_t *scanner = scanner_create(query_str);
         assert(scanner);
-
         query_t *query = query_create();
         assert(query);
+        parser_t *parser = parser_create();
+        assert(parser);
 
-        query_parse(query, scanner);
+        parser_parse(parser, scanner, query);
 
-        /* TODO: */
+        assert(query->attr_num == 1);
+        assert(0 == strncmp(query->attr_names[0], "attr1", MAX_ATTR_NAME_LEN));
+        assert(query->rel_num == 1);
+        assert(0 == strncmp(query->rel_names[0], "table1", MAX_REL_NAME_LEN));
 
         scanner_destroy(scanner);
+        parser_destroy(parser);
         query_destroy(query);
     }
 

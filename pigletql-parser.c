@@ -5,20 +5,16 @@
 #include <ctype.h>
 
 #include "pigletql-parser.h"
-#include "pigletql-def.h"
-
-typedef struct query_t {
-    attr_name_t attr_names[MAX_ATTR_NUM];
-    uint16_t attr_num;
-
-    rel_name_t rel_names[MAX_REL_NUM];
-    uint16_t rel_num;
-} query_t;
 
 typedef struct scanner_t {
     const char *input;
     const char *token_start;
 } scanner_t;
+
+typedef struct parser_t {
+    const scanner_t *scanner;
+    const query_t *query;
+} parser_t;
 
 scanner_t *scanner_create(const char *string)
 {
@@ -168,12 +164,12 @@ token_t scanner_next(scanner_t *scanner)
     return scanner_token_error_create("Unknown character");
 }
 
+
 query_t *query_create(void)
 {
     query_t *query = calloc(1, sizeof(*query));
     if (!query)
-        return query;
-
+        return NULL;
     return query;
 }
 
@@ -183,6 +179,27 @@ void query_destroy(query_t *query)
         free(query);
 }
 
-void query_parse(query_t *query, scanner_t *scanner)
+parser_t *parser_create(void)
 {
+    parser_t *parser = calloc(1, sizeof(*parser));
+    if (!parser)
+        return NULL;
+    return parser;
+
+}
+
+void parser_destroy(parser_t *parser)
+{
+    if (parser)
+        free(parser);
+}
+/* static void parser_consume(parser_t *parser, token_type type, const char *msg) */
+/* { */
+
+/* } */
+
+void parser_parse(parser_t *parser, scanner_t *scanner, query_t *query)
+{
+    parser->scanner = scanner;
+    parser->query = query;
 }

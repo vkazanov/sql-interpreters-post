@@ -1,7 +1,18 @@
 #ifndef PIGLETQL_PARSER_H
 #define PIGLETQL_PARSER_H
 
-typedef struct query_t query_t;
+#include "pigletql-def.h"
+
+typedef struct query_t {
+    attr_name_t attr_names[MAX_ATTR_NUM];
+    uint16_t attr_num;
+
+    rel_name_t rel_names[MAX_REL_NUM];
+    uint16_t rel_num;
+} query_t;
+
+
+typedef struct parser_t parser_t;
 
 typedef struct scanner_t scanner_t;
 
@@ -44,6 +55,12 @@ query_t *query_create(void);
 
 void query_destroy(query_t *query);
 
-void query_parse(query_t *query, scanner_t *scanner);
+parser_t *parser_create(void);
+
+void parser_destroy(parser_t *parser);
+
+void parser_parse(parser_t *parser, scanner_t *scanner, query_t *query);
+
+
 
 #endif //PIGLETQL_PARSER_H

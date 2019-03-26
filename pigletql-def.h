@@ -17,7 +17,7 @@
 /* maximum number of relations */
 #define MAX_REL_NUM UINT16_MAX
 /* maximum relation name length */
-#define MAX_RELATION_NAME_LEN 256
+#define MAX_REL_NAME_LEN 256
 
 typedef enum sort_order {
     SORT_ASC,
@@ -26,6 +26,6 @@ typedef enum sort_order {
 
 typedef uint32_t value_type_t;  /* a single value type supported */
 typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */
-typedef char rel_name_t[MAX_RELATION_NAME_LEN]; /* relation names are fixed-size strings */
+typedef char rel_name_t[MAX_REL_NAME_LEN]; /* relation names are fixed-size strings */
 
 #endif //PIGLETQL_DEF_H

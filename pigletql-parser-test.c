@@ -74,6 +74,36 @@ int main(int argc, char *argv[])
         scanner_destroy(scanner);
     }
 
+    /* Basic SELECT queries */
+    {
+        const char *query_str = "SELECT attr1 FROM table;";
+
+        scanner_t *scanner = scanner_create(query_str);
+        assert(scanner);
+
+        query_t *query = query_create();
+        assert(query);
+
+        query_parse(query, scanner);
+
+        /* TODO: */
+
+        scanner_destroy(scanner);
+        query_destroy(query);
+    }
+
+    /* { */
+    /*     const char *query_str = "SELECT attr1, attr2 FROM table;"; */
+    /* } */
+
+    /* { */
+    /*     const char *query_str = "SELECT * FROM table1;"; */
+    /* } */
+
+    /* { */
+    /*     const char *query_str = "SELECT * FROM table1, table2;"; */
+    /* } */
+
     /* TODO: */
     /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2"; */
     /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2"; */

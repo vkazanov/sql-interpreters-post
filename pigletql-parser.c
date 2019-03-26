@@ -168,11 +168,21 @@ token_t scanner_next(scanner_t *scanner)
     return scanner_token_error_create("Unknown character");
 }
 
-void parse(const char *query_string, query_t *query)
+query_t *query_create(void)
 {
-    (void) query_string; (void) query;
+    query_t *query = calloc(1, sizeof(*query));
+    if (!query)
+        return query;
 
-    scanner_t *scanner = scanner_create(query_string);
+    return query;
+}
 
-    scanner_destroy(scanner);
+void query_destroy(query_t *query)
+{
+    if (query)
+        free(query);
+}
+
+void query_parse(query_t *query, scanner_t *scanner)
+{
 }

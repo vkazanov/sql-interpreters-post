@@ -40,6 +40,10 @@ void scanner_destroy(scanner_t *scanner);
 
 token_t scanner_next(scanner_t *scanner);
 
-void parse(const char *query_string, query_t *query);
+query_t *query_create(void);
+
+void query_destroy(query_t *query);
+
+void query_parse(query_t *query, scanner_t *scanner);
 
 #endif //PIGLETQL_PARSER_H

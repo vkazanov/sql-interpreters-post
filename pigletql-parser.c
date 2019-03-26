@@ -138,10 +138,10 @@ token_t scanner_next(scanner_t *scanner)
 
     scanner->token_start = scanner->input;
 
-    if (is_eos(scanner)) return token_create(scanner, TOKEN_EOS);
+    if (is_eos(scanner))
+        return token_create(scanner, TOKEN_EOS);
 
-    char c = peek(scanner);
-    advance(scanner);
+    char c = advance(scanner);
 
     if (is_alpha(c))
         return ident(scanner);

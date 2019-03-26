@@ -93,6 +93,15 @@ static token_t token_create(scanner_t *scanner, token_type type)
     return token;
 }
 
+static token_t token_error_create(const char *error_msg)
+{
+    token_t token;
+    token.type = TOKEN_ERROR;
+    token.start = error_msg;
+    token.length = strlen(error_msg);
+    return token;
+}
+
 static token_type keyword(scanner_t *scanner, int start, int length, const char* suffix, token_type type)
 {
     if (scanner->input - scanner->token_start != start + length)
@@ -156,7 +165,7 @@ token_t scanner_next(scanner_t *scanner)
     case '=': return token_create(scanner, TOKEN_EQUAL);
     }
 
-    assert(false);
+    return token_error_create("Unknown character");
 }
 
 void parse(const char *query_string, query_t *query)

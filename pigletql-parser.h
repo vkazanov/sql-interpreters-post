@@ -24,6 +24,7 @@ typedef enum token_type {
     /* TOKEN_ASC, */
     /* TOKEN_DESC, */
 
+    TOKEN_ERROR,
     TOKEN_EOS
 } token_type;
 

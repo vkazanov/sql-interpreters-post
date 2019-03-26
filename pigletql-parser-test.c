@@ -7,11 +7,11 @@ int main(int argc, char *argv[])
 {
     (void) argc; (void) argv;
 
-    /* Scanner test */
+    /* Basic scanner test */
     {
-        const char *query_string = "SELECT *,attr1 FROM WHERE attr1=11;";
+        const char *query = "SELECT *,attr1 FROM WHERE attr1=11;";
 
-        scanner_t *scanner = scanner_create(query_string);
+        scanner_t *scanner = scanner_create(query);
 
         token_t token = scanner_next(scanner);
         assert(token.type == TOKEN_SELECT);
@@ -52,6 +52,24 @@ int main(int argc, char *argv[])
         token = scanner_next(scanner);
         assert(token.type == TOKEN_SEMICOLON);
         assert(0 == strncmp(token.start, ";", 1));
+
+        scanner_destroy(scanner);
+    }
+
+    /* Basic scanner error */
+    {
+        const char *query = "attr1 !1attr";
+
+        scanner_t *scanner = scanner_create(query);
+
+        token_t token = scanner_next(scanner);
+        assert(token.type == TOKEN_IDENT);
+        assert(0 == strncmp(token.start, "attr1", 5));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_ERROR);
+        const char *err_msg = "Unknown character";
+        assert(0 == strncmp(token.start, err_msg, strlen(err_msg)));
 
         scanner_destroy(scanner);
     }

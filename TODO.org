@@ -9,9 +9,10 @@
 ** DONE value_pos -> attr_i
 ** DONE Separate relation tuple adding/loading and relation metadata definition
 ** DONE Valgrind the hell out of it
-* TODO [1/11] SQL
+* TODO [1/12] SQL
 ** DONE scanner
 ** TODO parser
+** TODO prefix scanner-related function (or separate into a different module?)
 ** TODO CREATE TABLE
 ** TODO DESCRIBE TABLE
 ** TODO INSERT INTO

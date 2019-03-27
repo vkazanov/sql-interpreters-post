@@ -123,6 +123,7 @@ static token_type scan_ident_type(scanner_t *scanner)
     case 's': return scan_keyword(scanner, 1, 5, "elect", TOKEN_SELECT);
     case 'f': return scan_keyword(scanner, 1, 3, "rom", TOKEN_FROM);
     case 'w': return scan_keyword(scanner, 1, 4, "here", TOKEN_WHERE);
+    case 'a': return scan_keyword(scanner, 1, 2, "nd", TOKEN_AND);
     }
     return TOKEN_IDENT;
 }
@@ -165,6 +166,8 @@ token_t scanner_next(scanner_t *scanner)
     case ',': return scanner_token_create(scanner, TOKEN_COMMA);
     case '*': return scanner_token_create(scanner, TOKEN_STAR);
     case '=': return scanner_token_create(scanner, TOKEN_EQUAL);
+    case '<': return scanner_token_create(scanner, TOKEN_LESS);
+    case '>': return scanner_token_create(scanner, TOKEN_GREATER);
     }
 
     return scanner_token_error_create("Unknown character");
@@ -195,6 +198,14 @@ static void query_add_rel(query_t *query, token_t token)
 {
     strncpy(query->rel_names[query->rel_num], token.start, (size_t)token.length);
     query->rel_num++;
+}
+
+static void query_add_pred(query_t *query, token_t left_operand, token_t operator, token_t right_operand)
+{
+    query->predicates[query->pred_num].left = left_operand;
+    query->predicates[query->pred_num].op = operator;
+    query->predicates[query->pred_num].right = right_operand;
+    query->pred_num++;
 }
 
 parser_t *parser_create(void)
@@ -266,24 +277,50 @@ static bool parser_match(parser_t *parser, token_type type)
     return true;
 }
 
+static void parse_predicate(parser_t *parser)
+{
+    parser_consume(parser, TOKEN_IDENT, "Left predicate identifier expected");
+    token_t left = parser->previous;
+
+    if (!parser_match(parser, TOKEN_EQUAL) &&
+        !parser_match(parser, TOKEN_LESS) &&
+        !parser_match(parser, TOKEN_GREATER)) {
+        parser_error(parser, "Predicate operator expected");
+        return;
+    }
+    token_t op = parser->previous;
+
+    if (!parser_match(parser, TOKEN_IDENT) &&
+        !parser_match(parser, TOKEN_NUMBER)) {
+        parser_error(parser, "Right predicate identifier or number expected");
+        return;
+    }
+    token_t right = parser->previous;
+
+    query_add_pred(parser->query, left, op, right);
+}
+
 static void parse_select(parser_t *parser)
 {
     /* Collect attribute names */
-    parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
-    query_add_attr(parser->query, parser->previous);
-    while(parser_match(parser, TOKEN_COMMA)) {
+    do {
         parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
         query_add_attr(parser->query, parser->previous);
-    }
-
-    parser_consume(parser, TOKEN_FROM, "FROM expected");
+    } while (parser_match(parser, TOKEN_COMMA));
 
     /* Collect relation names */
-    parser_consume(parser, TOKEN_IDENT, "Relation name expected");
-    query_add_rel(parser->query, parser->previous);
-    while(parser_match(parser, TOKEN_COMMA)) {
+    parser_consume(parser, TOKEN_FROM, "FROM expected");
+
+    do {
         parser_consume(parser, TOKEN_IDENT, "Relation name expected");
         query_add_rel(parser->query, parser->previous);
+    } while (parser_match(parser, TOKEN_COMMA));
+
+    /* Collect filtering predicates */
+    if (parser_match(parser, TOKEN_WHERE)) {
+        do {
+            parse_predicate(parser);
+        } while (parser_match(parser, TOKEN_AND));
     }
 }
 

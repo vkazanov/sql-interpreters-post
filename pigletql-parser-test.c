@@ -99,6 +99,7 @@ int main(int argc, char *argv[])
 
     {
         const char *query_str = "SELECT attr1, attr2 FROM rel1,rel2,rel3;";
+
         scanner_t *scanner = scanner_create(query_str);
         parser_t *parser = parser_create();
         query_t *query = query_create();
@@ -118,19 +119,36 @@ int main(int argc, char *argv[])
         query_destroy(query);
     }
 
-    /* { */
-    /*     const char *query_str = "SELECT * FROM table1;"; */
-    /* } */
+    {
+        const char *query_str = "SELECT a1 FROM r1 WHERE a1=a2 AND b2<3 AND b3>4;";
 
-    /* { */
-    /*     const char *query_str = "SELECT * FROM table1, table2;"; */
-    /* } */
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+
+        assert(parser_parse(parser, scanner, query));
+
+        assert(query->pred_num == 3);
+
+        assert(query->predicates[0].left.type == TOKEN_IDENT);
+        assert(query->predicates[0].op.type == TOKEN_EQUAL);
+        assert(query->predicates[0].right.type == TOKEN_IDENT);
+
+        assert(query->predicates[1].left.type == TOKEN_IDENT);
+        assert(query->predicates[1].op.type == TOKEN_LESS);
+        assert(query->predicates[1].right.type == TOKEN_NUMBER);
+
+        assert(query->predicates[2].left.type == TOKEN_IDENT);
+        assert(query->predicates[2].op.type == TOKEN_GREATER);
+        assert(query->predicates[2].right.type == TOKEN_NUMBER);
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+    }
 
     /* TODO: */
-    /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2"; */
-    /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2"; */
-    /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2 WHERE a1=a2 "; */
-    /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2 WHERE a1=a2 ORDER BY a3 DESC/ASC"; */
+    /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2 ORDER BY a3 DESC/ASC"; */
 
     return 0;
 }

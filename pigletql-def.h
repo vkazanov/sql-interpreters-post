@@ -19,6 +19,9 @@
 /* maximum relation name length */
 #define MAX_REL_NAME_LEN 256
 
+/* maximum number of predicates per query */
+#define MAX_PRED_NUM UINT16_MAX
+
 typedef enum sort_order {
     SORT_ASC,
     SORT_DESC,

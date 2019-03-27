@@ -1,6 +1,8 @@
 #ifndef PIGLETQL_PARSER_H
 #define PIGLETQL_PARSER_H
 
+#include <stdbool.h>
+
 #include "pigletql-def.h"
 
 typedef struct query_t {
@@ -59,7 +61,7 @@ parser_t *parser_create(void);
 
 void parser_destroy(parser_t *parser);
 
-void parser_parse(parser_t *parser, scanner_t *scanner, query_t *query);
+bool parser_parse(parser_t *parser, scanner_t *scanner, query_t *query);
 
 
 

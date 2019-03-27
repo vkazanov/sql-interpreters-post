@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -12,8 +13,13 @@ typedef struct scanner_t {
 } scanner_t;
 
 typedef struct parser_t {
-    const scanner_t *scanner;
-    const query_t *query;
+    scanner_t *scanner;
+    query_t *query;
+
+    token_t current;
+    token_t previous;
+
+    bool had_error;
 } parser_t;
 
 scanner_t *scanner_create(const char *string)
@@ -179,6 +185,18 @@ void query_destroy(query_t *query)
         free(query);
 }
 
+static void query_add_attr(query_t *query, token_t token)
+{
+    strncpy(query->attr_names[query->attr_num], token.start, (size_t)token.length);
+    query->attr_num++;
+}
+
+static void query_add_rel(query_t *query, token_t token)
+{
+    strncpy(query->rel_names[query->rel_num], token.start, (size_t)token.length);
+    query->rel_num++;
+}
+
 parser_t *parser_create(void)
 {
     parser_t *parser = calloc(1, sizeof(*parser));
@@ -193,13 +211,105 @@ void parser_destroy(parser_t *parser)
     if (parser)
         free(parser);
 }
-/* static void parser_consume(parser_t *parser, token_type type, const char *msg) */
-/* { */
 
-/* } */
-
-void parser_parse(parser_t *parser, scanner_t *scanner, query_t *query)
+static void parser_error_at(parser_t *parser, token_t token, const char *msg)
 {
-    parser->scanner = scanner;
-    parser->query = query;
+    (void) token;
+    if (parser->had_error)
+        return;
+    parser->had_error = true;
+
+    fprintf(stderr, "Error: ");
+    fprintf(stderr, "%s\n", msg);
+}
+
+static void parser_error(parser_t *parser, const char* msg) {
+    parser_error_at(parser, parser->previous, msg);
+}
+
+static void parser_error_at_current(parser_t *parser, const char *msg)
+{
+    parser_error_at(parser, parser->current, msg);
+}
+
+static void parser_advance(parser_t *parser)
+{
+    parser->previous = parser->current;
+    for (;;) {
+        parser->current = scanner_next(parser->scanner);
+        if (parser->current.type != TOKEN_ERROR)
+            break;
+
+        parser_error_at_current(parser, parser->current.start);
+    }
+}
+
+static void parser_consume(parser_t *parser, token_type type, const char *msg)
+{
+    if (parser->current.type == type) {
+        parser_advance(parser);
+        return;
+    }
+
+    parser_error_at_current(parser, msg);
+}
+
+static bool parser_check(parser_t *parser, token_type type) {
+    return parser->current.type == type;
+}
+
+static bool parser_match(parser_t *parser, token_type type)
+{
+    if (!parser_check(parser, type))
+        return false;
+    parser_advance(parser);
+    return true;
+}
+
+static void parse_select(parser_t *parser)
+{
+    /* Collect attribute names */
+    parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
+    query_add_attr(parser->query, parser->previous);
+    while(parser_match(parser, TOKEN_COMMA)) {
+        parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
+        query_add_attr(parser->query, parser->previous);
+    }
+
+    parser_consume(parser, TOKEN_FROM, "FROM expected");
+
+    /* Collect relation names */
+    parser_consume(parser, TOKEN_IDENT, "Relation name expected");
+    query_add_rel(parser->query, parser->previous);
+    while(parser_match(parser, TOKEN_COMMA)) {
+        parser_consume(parser, TOKEN_IDENT, "Relation name expected");
+        query_add_rel(parser->query, parser->previous);
+    }
+}
+
+static void parse_query(parser_t *parser)
+{
+    /* NOTE: we only match a single query type for now */
+    if (parser_match(parser, TOKEN_SELECT))
+        parse_select(parser);
+    else
+        parser_error(parser, "Only SELECT query is supported");
+
+    parser_consume(parser, TOKEN_SEMICOLON, "Queries should end with a semicolon");
+    parser_consume(parser, TOKEN_EOS, "Only single line queries are supported");
+}
+
+bool parser_parse(parser_t *parser, scanner_t *scanner, query_t *query)
+{
+     parser->scanner = scanner;
+     parser->query = query;
+
+     parser->had_error = false;
+
+     parser_advance(parser);
+
+     while (!parser_match(parser, TOKEN_EOS))
+         parse_query(parser);
+
+     return !parser->had_error;
 }

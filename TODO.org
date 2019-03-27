@@ -9,19 +9,20 @@
 ** DONE value_pos -> attr_i
 ** DONE Separate relation tuple adding/loading and relation metadata definition
 ** DONE Valgrind the hell out of it
-* TODO [2/12] SQL
+* TODO [2/13] SQL Parser
 ** DONE scanner
 ** DONE prefix scanner-related function (or separate into a different module?)
-** TODO parser
+** TODO SELECT - select x from y
+** TODO SELECT - order by asc/desc
 ** TODO CREATE TABLE
 ** TODO DESCRIBE TABLE
 ** TODO INSERT INTO
-** TODO SELECT - select
-** TODO SELECT - project
-** TODO SELECT - join
-** TODO SELECT - order by
-** TODO SELECT - order by asc/desc
 ** TODO comments where needed
+** TODO CLI util with just a parser attached
+** TODO Go through the error handling code
+* TODO Query to Algebra compiler
+** TODO query validation
+** TODO query compilation
 * TODO Mention all the papers/books
 
   - book with a Java-based example

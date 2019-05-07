@@ -279,12 +279,52 @@ static void create_table_test(void)
 
 }
 
+static void insert_test(void)
+{
+    /* insert scanner test */
+    {
+        const char *query = "INSERT INTO rel1 VALUES (111);";
+
+        scanner_t *scanner = scanner_create(query);
+
+        token_t token = scanner_next(scanner);
+        assert(token.type == TOKEN_INSERT);
+        assert(0 == strncmp(token.start, "INSERT", 6));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_INTO);
+        assert(0 == strncmp(token.start, "INTO", 4));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_IDENT);
+        assert(0 == strncmp(token.start, "rel1", 4));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_VALUES);
+        assert(0 == strncmp(token.start, "VALUES", 6));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_LPAREN);
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_NUMBER);
+        assert(0 == strncmp(token.start, "111", 3));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_RPAREN);
+
+        scanner_destroy(scanner);
+    }
+
+}
+
 int main(int argc, char *argv[])
 {
     (void) argc; (void) argv;
 
     select_test();
     create_table_test();
+    insert_test();
 
     return 0;
 }

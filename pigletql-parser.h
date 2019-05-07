@@ -23,7 +23,7 @@ typedef enum token_type {
     TOKEN_SELECT,
     TOKEN_CREATE,
     TOKEN_TABLE,
-    /* TOKEN_INSERT, */
+    TOKEN_INSERT,
 
     TOKEN_FROM,
     TOKEN_WHERE,
@@ -33,6 +33,9 @@ typedef enum token_type {
     TOKEN_BY,
     TOKEN_ASC,
     TOKEN_DESC,
+
+    TOKEN_INTO,
+    TOKEN_VALUES,
 
     TOKEN_ERROR,
     TOKEN_EOS
@@ -53,6 +56,7 @@ typedef struct query_predicate_t {
 typedef enum query_tag {
     QUERY_SELECT,
     QUERY_CREATE_TABLE,
+    QUERY_INSERT,
 } query_tag;
 
 typedef struct query_select_t {
@@ -76,6 +80,13 @@ typedef struct query_create_table_t {
     attr_name_t attr_names[MAX_ATTR_NUM];
     uint16_t attr_num;
 } query_create_table_t;
+
+typedef struct query_insert_t {
+    rel_name_t rel_name;
+
+    value_type_t values[MAX_ATTR_NUM];
+    uint16_t value_num;
+} query_insert_t;
 
 typedef struct query_t {
     query_tag tag;

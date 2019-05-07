@@ -136,6 +136,15 @@ static token_type scan_ident_type(scanner_t *scanner)
     case 'd': return scan_keyword(scanner, 1, 3, "esc", TOKEN_DESC);
     case 'c': return scan_keyword(scanner, 1, 5, "reate", TOKEN_CREATE);
     case 't': return scan_keyword(scanner, 1, 4, "able", TOKEN_TABLE);
+    case 'i': {
+        /* either INTO or INSERT */
+        token_type t = scan_keyword(scanner, 1, 5, "nsert", TOKEN_INSERT);
+        if (t != TOKEN_IDENT)
+            return t;
+
+        return scan_keyword(scanner, 1, 3, "nto", TOKEN_INTO);;
+    }
+    case 'v': return scan_keyword(scanner, 1, 5, "alues", TOKEN_VALUES);
     }
     return TOKEN_IDENT;
 }

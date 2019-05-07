@@ -9,7 +9,7 @@
 ** DONE value_pos -> attr_i
 ** DONE Separate relation tuple adding/loading and relation metadata definition
 ** DONE Valgrind the hell out of it
-* TODO [8/9] SQL Parser
+* DONE [8/8] SQL Parser
 ** DONE scanner
 ** DONE prefix scanner-related function (or separate into a different module?)
 ** DONE SELECT - select x from y
@@ -18,10 +18,11 @@
 ** DONE CREATE TABLE
 ** DONE INSERT INTO
 ** DONE Error handling
+* TODO Query Evaluator
 ** TODO CLI util with just a parser attached
-* TODO Query to Algebra compiler
-** TODO query validation
-** TODO query compilation
+** TODO create table
+** TODO insert
+** TODO select
 * TODO The Article
 * TODO Bibliography
 

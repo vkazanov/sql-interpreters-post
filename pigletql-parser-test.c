@@ -3,10 +3,8 @@
 
 #include "pigletql-parser.h"
 
-int main(int argc, char *argv[])
+static void select_test(void)
 {
-    (void) argc; (void) argv;
-
     /* Basic SELECT scanner test */
     {
         const char *query = "SELECT *,attr1 FROM WHERE attr1=11;";
@@ -112,10 +110,11 @@ int main(int argc, char *argv[])
 
         assert(parser_parse(parser, scanner, query));
 
-        assert(query->attr_num == 1);
-        assert(0 == strncmp(query->attr_names[0], "attr1", MAX_ATTR_NAME_LEN));
-        assert(query->rel_num == 1);
-        assert(0 == strncmp(query->rel_names[0], "rel1", MAX_REL_NAME_LEN));
+        assert(query->tag == QUERY_SELECT);
+        assert(query->as.select.attr_num == 1);
+        assert(0 == strncmp(query->as.select.attr_names[0], "attr1", MAX_ATTR_NAME_LEN));
+        assert(query->as.select.rel_num == 1);
+        assert(0 == strncmp(query->as.select.rel_names[0], "rel1", MAX_REL_NAME_LEN));
 
         scanner_destroy(scanner);
         parser_destroy(parser);
@@ -131,13 +130,13 @@ int main(int argc, char *argv[])
 
         assert(parser_parse(parser, scanner, query));
 
-        assert(query->attr_num == 2);
-        assert(0 == strncmp(query->attr_names[0], "attr1", MAX_ATTR_NAME_LEN));
-        assert(0 == strncmp(query->attr_names[1], "attr2", MAX_ATTR_NAME_LEN));
-        assert(query->rel_num == 3);
-        assert(0 == strncmp(query->rel_names[0], "rel1", MAX_REL_NAME_LEN));
-        assert(0 == strncmp(query->rel_names[1], "rel2", MAX_REL_NAME_LEN));
-        assert(0 == strncmp(query->rel_names[2], "rel3", MAX_REL_NAME_LEN));
+        assert(query->as.select.attr_num == 2);
+        assert(0 == strncmp(query->as.select.attr_names[0], "attr1", MAX_ATTR_NAME_LEN));
+        assert(0 == strncmp(query->as.select.attr_names[1], "attr2", MAX_ATTR_NAME_LEN));
+        assert(query->as.select.rel_num == 3);
+        assert(0 == strncmp(query->as.select.rel_names[0], "rel1", MAX_REL_NAME_LEN));
+        assert(0 == strncmp(query->as.select.rel_names[1], "rel2", MAX_REL_NAME_LEN));
+        assert(0 == strncmp(query->as.select.rel_names[2], "rel3", MAX_REL_NAME_LEN));
 
         scanner_destroy(scanner);
         parser_destroy(parser);
@@ -153,19 +152,19 @@ int main(int argc, char *argv[])
 
         assert(parser_parse(parser, scanner, query));
 
-        assert(query->pred_num == 3);
+        assert(query->as.select.pred_num == 3);
 
-        assert(query->predicates[0].left.type == TOKEN_IDENT);
-        assert(query->predicates[0].op.type == TOKEN_EQUAL);
-        assert(query->predicates[0].right.type == TOKEN_IDENT);
+        assert(query->as.select.predicates[0].left.type == TOKEN_IDENT);
+        assert(query->as.select.predicates[0].op.type == TOKEN_EQUAL);
+        assert(query->as.select.predicates[0].right.type == TOKEN_IDENT);
 
-        assert(query->predicates[1].left.type == TOKEN_IDENT);
-        assert(query->predicates[1].op.type == TOKEN_LESS);
-        assert(query->predicates[1].right.type == TOKEN_NUMBER);
+        assert(query->as.select.predicates[1].left.type == TOKEN_IDENT);
+        assert(query->as.select.predicates[1].op.type == TOKEN_LESS);
+        assert(query->as.select.predicates[1].right.type == TOKEN_NUMBER);
 
-        assert(query->predicates[2].left.type == TOKEN_IDENT);
-        assert(query->predicates[2].op.type == TOKEN_GREATER);
-        assert(query->predicates[2].right.type == TOKEN_NUMBER);
+        assert(query->as.select.predicates[2].left.type == TOKEN_IDENT);
+        assert(query->as.select.predicates[2].op.type == TOKEN_GREATER);
+        assert(query->as.select.predicates[2].right.type == TOKEN_NUMBER);
 
         scanner_destroy(scanner);
         parser_destroy(parser);
@@ -180,9 +179,10 @@ int main(int argc, char *argv[])
         query_t *query = query_create();
 
         assert(parser_parse(parser, scanner, query));
-        assert(query->has_order);
-        assert(query->order_type == SORT_DESC);
-        assert(0 == strncmp(query->order_by_attr, "a3", MAX_ATTR_NAME_LEN));
+        assert(query->tag == QUERY_SELECT);
+        assert(query->as.select.has_order);
+        assert(query->as.select.order_type == SORT_DESC);
+        assert(0 == strncmp(query->as.select.order_by_attr, "a3", MAX_ATTR_NAME_LEN));
 
         scanner_destroy(scanner);
         parser_destroy(parser);
@@ -195,9 +195,9 @@ int main(int argc, char *argv[])
         query = query_create();
 
         assert(parser_parse(parser, scanner, query));
-        assert(query->has_order);
-        assert(query->order_type == SORT_ASC);
-        assert(0 == strncmp(query->order_by_attr, "a3", MAX_ATTR_NAME_LEN));
+        assert(query->as.select.has_order);
+        assert(query->as.select.order_type == SORT_ASC);
+        assert(0 == strncmp(query->as.select.order_by_attr, "a3", MAX_ATTR_NAME_LEN));
 
         scanner_destroy(scanner);
         parser_destroy(parser);
@@ -210,14 +210,27 @@ int main(int argc, char *argv[])
         query = query_create();
 
         assert(parser_parse(parser, scanner, query));
-        assert(query->has_order);
-        assert(query->order_type == SORT_ASC);
-        assert(0 == strncmp(query->order_by_attr, "a3", MAX_ATTR_NAME_LEN));
+        assert(query->as.select.has_order);
+        assert(query->as.select.order_type == SORT_ASC);
+        assert(0 == strncmp(query->as.select.order_by_attr, "a3", MAX_ATTR_NAME_LEN));
 
         scanner_destroy(scanner);
         parser_destroy(parser);
         query_destroy(query);
     }
+}
+
+static void create_test(void)
+{
+
+}
+
+int main(int argc, char *argv[])
+{
+    (void) argc; (void) argv;
+
+    select_test();
+    create_test();
 
     return 0;
 }

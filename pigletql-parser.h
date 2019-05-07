@@ -18,8 +18,9 @@ typedef enum token_type {
     TOKEN_GREATER,
 
     TOKEN_SELECT,
+    TOKEN_CREATE,
+    TOKEN_TABLE,
     /* TOKEN_INSERT, */
-    /* TOKEN_CREATE, */
 
     TOKEN_FROM,
     TOKEN_WHERE,
@@ -46,7 +47,12 @@ typedef struct query_predicate_t {
     token_t right;
 } query_predicate_t;
 
-typedef struct query_t {
+typedef enum query_tag {
+    QUERY_SELECT,
+    QUERY_CREATE_TABLE,
+} query_tag;
+
+typedef struct query_select_t {
     attr_name_t attr_names[MAX_ATTR_NUM];
     uint16_t attr_num;
 
@@ -59,6 +65,21 @@ typedef struct query_t {
     bool has_order;
     attr_name_t order_by_attr;
     sort_order_t order_type;
+} query_select_t;
+
+typedef struct query_create_table_t {
+    rel_name_t rel_name;
+
+    attr_name_t attr_names[MAX_ATTR_NUM];
+    uint16_t attr_num;
+} query_create_table_t;
+
+typedef struct query_t {
+    query_tag tag;
+    union {
+        query_select_t select;
+        query_create_table_t create_table;
+    } as;
 } query_t;
 
 typedef struct parser_t parser_t;
@@ -80,7 +101,5 @@ parser_t *parser_create(void);
 void parser_destroy(parser_t *parser);
 
 bool parser_parse(parser_t *parser, scanner_t *scanner, query_t *query);
-
-
 
 #endif //PIGLETQL_PARSER_H

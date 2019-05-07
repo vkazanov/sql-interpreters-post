@@ -16,8 +16,8 @@
 ** DONE SELECT - where
 ** DONE SELECT - order by asc/desc
 ** TODO CREATE TABLE
-** TODO DESCRIBE TABLE
 ** TODO INSERT INTO
+** TODO DESCRIBE TABLE
 ** TODO CLI util with just a parser attached
 ** TODO Error handling
 ** TODO Comments

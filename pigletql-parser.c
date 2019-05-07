@@ -200,36 +200,36 @@ void query_destroy(query_t *query)
 
 static void query_add_attr(query_t *query, token_t token)
 {
-    strncpy(query->attr_names[query->attr_num], token.start, (size_t)token.length);
-    query->attr_num++;
+    strncpy(query->as.select.attr_names[query->as.select.attr_num], token.start, (size_t)token.length);
+    query->as.select.attr_num++;
 }
 
 static void query_add_rel(query_t *query, token_t token)
 {
-    strncpy(query->rel_names[query->rel_num], token.start, (size_t)token.length);
-    query->rel_num++;
+    strncpy(query->as.select.rel_names[query->as.select.rel_num], token.start, (size_t)token.length);
+    query->as.select.rel_num++;
 }
 
 static void query_add_pred(query_t *query, token_t left_operand, token_t operator, token_t right_operand)
 {
-    query->predicates[query->pred_num].left = left_operand;
-    query->predicates[query->pred_num].op = operator;
-    query->predicates[query->pred_num].right = right_operand;
-    query->pred_num++;
+    query->as.select.predicates[query->as.select.pred_num].left = left_operand;
+    query->as.select.predicates[query->as.select.pred_num].op = operator;
+    query->as.select.predicates[query->as.select.pred_num].right = right_operand;
+    query->as.select.pred_num++;
 }
 
 static void query_add_order_by_attr(query_t *query, token_t token)
 {
-    query->has_order = true;
-    strncpy(query->order_by_attr, token.start, (size_t)token.length);
+    query->as.select.has_order = true;
+    strncpy(query->as.select.order_by_attr, token.start, (size_t)token.length);
 }
 
 static void query_add_sort_order(query_t *query, token_t token)
 {
     if (token.type == TOKEN_ASC) {
-        query->order_type = SORT_ASC;
+        query->as.select.order_type = SORT_ASC;
     } else {
-        query->order_type = SORT_DESC;
+        query->as.select.order_type = SORT_DESC;
     }
 }
 
@@ -367,9 +367,10 @@ static void parse_select(parser_t *parser)
 static void parse_query(parser_t *parser)
 {
     /* NOTE: we only match a single query type for now */
-    if (parser_match(parser, TOKEN_SELECT))
+    if (parser_match(parser, TOKEN_SELECT)) {
+        parser->query->tag = QUERY_SELECT;
         parse_select(parser);
-    else
+    } else
         parser_error(parser, "Only SELECT query is supported");
 
     parser_consume(parser, TOKEN_SEMICOLON, "Queries should end with a semicolon");

@@ -222,6 +222,34 @@ static void select_test(void)
 
 static void create_test(void)
 {
+    /* table scanner test */
+    {
+        const char *query = "CREATE TABLE (a1);";
+
+        scanner_t *scanner = scanner_create(query);
+
+        token_t token = scanner_next(scanner);
+        assert(token.type == TOKEN_CREATE);
+        assert(0 == strncmp(token.start, "CREATE", 6));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_TABLE);
+        assert(0 == strncmp(token.start, "TABLE", 5));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_LPAREN);
+        assert(0 == strncmp(token.start, "(", 1));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_IDENT);
+        assert(0 == strncmp(token.start, "a1", 2));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_RPAREN);
+        assert(0 == strncmp(token.start, ")", 1));
+
+        scanner_destroy(scanner);
+    }
 
 }
 

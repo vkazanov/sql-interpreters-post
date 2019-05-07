@@ -134,6 +134,8 @@ static token_type scan_ident_type(scanner_t *scanner)
     case 'o': return scan_keyword(scanner, 1, 4, "rder", TOKEN_ORDER);
     case 'b': return scan_keyword(scanner, 1, 1, "y", TOKEN_BY);
     case 'd': return scan_keyword(scanner, 1, 3, "esc", TOKEN_DESC);
+    case 'c': return scan_keyword(scanner, 1, 5, "reate", TOKEN_CREATE);
+    case 't': return scan_keyword(scanner, 1, 4, "able", TOKEN_TABLE);
     }
     return TOKEN_IDENT;
 }
@@ -178,6 +180,8 @@ token_t scanner_next(scanner_t *scanner)
     case '=': return scanner_token_create(scanner, TOKEN_EQUAL);
     case '<': return scanner_token_create(scanner, TOKEN_LESS);
     case '>': return scanner_token_create(scanner, TOKEN_GREATER);
+    case '(': return scanner_token_create(scanner, TOKEN_LPAREN);
+    case ')': return scanner_token_create(scanner, TOKEN_RPAREN);
     }
 
     return scanner_token_error_create("Unknown character");

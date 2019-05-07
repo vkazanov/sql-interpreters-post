@@ -223,6 +223,12 @@ static void query_create_table_add_attr(query_t *query, token_t token)
     query->as.create_table.attr_num++;
 }
 
+static void query_insert_add_value(query_t *query, token_t token)
+{
+    query->as.insert.values[query->as.insert.value_num] = (value_type_t)atoi(token.start);
+    query->as.insert.value_num++;
+}
+
 static void query_select_add_rel(query_t *query, token_t token)
 {
     strncpy(query->as.select.rel_names[query->as.select.rel_num], token.start, (size_t)token.length);
@@ -232,6 +238,11 @@ static void query_select_add_rel(query_t *query, token_t token)
 static void query_create_table_add_rel(query_t *query, token_t token)
 {
     strncpy(query->as.create_table.rel_name, token.start, (size_t)token.length);
+}
+
+static void query_insert_add_rel(query_t *query, token_t token)
+{
+    strncpy(query->as.insert.rel_name, token.start, (size_t)token.length);
 }
 
 static void query_select_add_pred(query_t *query, token_t left_operand, token_t operator, token_t right_operand)
@@ -403,6 +414,23 @@ static void parser_create_table(parser_t *parser)
     parser_consume(parser, TOKEN_RPAREN, "RPAREN expected");
 }
 
+static void parser_insert(parser_t *parser)
+{
+    /* Relation name */
+    parser_consume(parser, TOKEN_IDENT, "Relation name expected");
+    query_insert_add_rel(parser->query, parser->previous);
+
+    /* Value list */
+    parser_consume(parser, TOKEN_VALUES, "VALUES expected");
+
+    parser_consume(parser, TOKEN_LPAREN, "LPAREN expected");
+    do {
+        parser_consume(parser, TOKEN_NUMBER, "An integer value expected");
+        query_insert_add_value(parser->query, parser->previous);
+    } while (parser_match(parser, TOKEN_COMMA));
+    parser_consume(parser, TOKEN_RPAREN, "RPAREN expected");
+}
+
 static void parse_query(parser_t *parser)
 {
     if (parser_match(parser, TOKEN_SELECT)) {
@@ -412,6 +440,10 @@ static void parse_query(parser_t *parser)
         parser_consume(parser, TOKEN_TABLE, "TABLE expected");
         parser->query->tag = QUERY_CREATE_TABLE;
         parser_create_table(parser);
+    } else if (parser_match(parser, TOKEN_INSERT)) {
+        parser_consume(parser, TOKEN_INTO, "INTO expected");
+        parser->query->tag = QUERY_INSERT;
+        parser_insert(parser);
     } else
         parser_error(parser, "Query type unsupported");
 

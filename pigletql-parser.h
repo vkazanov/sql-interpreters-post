@@ -93,6 +93,7 @@ typedef struct query_t {
     union {
         query_select_t select;
         query_create_table_t create_table;
+        query_insert_t insert;
     } as;
 } query_t;
 

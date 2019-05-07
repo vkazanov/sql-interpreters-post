@@ -316,6 +316,32 @@ static void insert_test(void)
         scanner_destroy(scanner);
     }
 
+    /* basic INSERT INTO query test */
+    {
+        const char *query_str = "INSERT INTO rel1 VALUES (111, 222);";
+
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(scanner);
+        assert(parser);
+        assert(query);
+
+        assert(parser_parse(parser, scanner, query));
+
+        assert(query->tag == QUERY_INSERT);
+
+        assert(0 == strncmp(query->as.insert.rel_name, "rel1", MAX_REL_NAME_LEN));
+
+        assert(query->as.insert.value_num == 2);
+        assert(query->as.insert.values[0] == 111);
+        assert(query->as.insert.values[1] == 222);
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+    }
+
 }
 
 int main(int argc, char *argv[])

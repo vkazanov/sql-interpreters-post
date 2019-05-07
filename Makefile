@@ -7,8 +7,8 @@ test: pigletql-eval-test pigletql-parser-test
 	./pigletql-eval-test
 	./pigletql-parser-test
 
-# pigletql: pigletql.c
-# 	$(CC) $(CFLAGS) $^ -o $@
+pigletql: pigletql.c pigletql-parser.c pigletql-eval.c
+	$(CC) $(CFLAGS) $^ -o $@
 
 pigletql-eval-test: pigletql-eval-test.c pigletql-eval.c
 	$(CC) $(CFLAGS) $^ -o $@

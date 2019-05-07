@@ -56,5 +56,6 @@ GPATH
 GRTAGS
 GTAGS
 
+pigletql
 pigletql-test
 pigletql-parser-test

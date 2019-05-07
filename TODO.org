@@ -21,8 +21,8 @@
 * TODO Query Evaluator
 ** TODO CLI util with just a parser attached
 ** TODO create table
-** TODO insert
-** TODO select
+** TODO insert (validate & execute)
+** TODO select (valudate & execute)
 * TODO The Article
 * TODO Bibliography
 

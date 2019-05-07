@@ -77,6 +77,7 @@ static void scanner_skip_space(scanner_t *scanner)
         switch (c) {
         case ' ':
         case '\r':
+        case '\n':
         case '\t':
             scanner_advance(scanner);
             break;

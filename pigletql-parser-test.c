@@ -220,7 +220,7 @@ static void select_test(void)
     }
 }
 
-static void create_test(void)
+static void create_table_test(void)
 {
     /* table scanner test */
     {
@@ -251,6 +251,32 @@ static void create_test(void)
         scanner_destroy(scanner);
     }
 
+    /* basic CREATE TABLE query test */
+    {
+        const char *query_str = "CREATE TABLE rel1 (a1, a2);";
+
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(scanner);
+        assert(parser);
+        assert(query);
+
+        assert(parser_parse(parser, scanner, query));
+
+        assert(query->tag == QUERY_CREATE_TABLE);
+
+        assert(query->as.create_table.attr_num == 2);
+        assert(0 == strncmp(query->as.create_table.attr_names[0], "a1", MAX_ATTR_NAME_LEN));
+        assert(0 == strncmp(query->as.create_table.attr_names[1], "a2", MAX_ATTR_NAME_LEN));
+
+        assert(0 == strncmp(query->as.create_table.rel_name, "rel1", MAX_REL_NAME_LEN));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+    }
+
 }
 
 int main(int argc, char *argv[])
@@ -258,7 +284,7 @@ int main(int argc, char *argv[])
     (void) argc; (void) argv;
 
     select_test();
-    create_test();
+    create_table_test();
 
     return 0;
 }

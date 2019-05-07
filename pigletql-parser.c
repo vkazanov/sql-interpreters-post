@@ -202,19 +202,30 @@ void query_destroy(query_t *query)
         free(query);
 }
 
-static void query_add_attr(query_t *query, token_t token)
+static void query_select_add_attr(query_t *query, token_t token)
 {
     strncpy(query->as.select.attr_names[query->as.select.attr_num], token.start, (size_t)token.length);
     query->as.select.attr_num++;
 }
 
-static void query_add_rel(query_t *query, token_t token)
+static void query_create_table_add_attr(query_t *query, token_t token)
+{
+    strncpy(query->as.create_table.attr_names[query->as.create_table.attr_num], token.start, (size_t)token.length);
+    query->as.create_table.attr_num++;
+}
+
+static void query_select_add_rel(query_t *query, token_t token)
 {
     strncpy(query->as.select.rel_names[query->as.select.rel_num], token.start, (size_t)token.length);
     query->as.select.rel_num++;
 }
 
-static void query_add_pred(query_t *query, token_t left_operand, token_t operator, token_t right_operand)
+static void query_create_table_add_rel(query_t *query, token_t token)
+{
+    strncpy(query->as.create_table.rel_name, token.start, (size_t)token.length);
+}
+
+static void query_select_add_pred(query_t *query, token_t left_operand, token_t operator, token_t right_operand)
 {
     query->as.select.predicates[query->as.select.pred_num].left = left_operand;
     query->as.select.predicates[query->as.select.pred_num].op = operator;
@@ -222,13 +233,13 @@ static void query_add_pred(query_t *query, token_t left_operand, token_t operato
     query->as.select.pred_num++;
 }
 
-static void query_add_order_by_attr(query_t *query, token_t token)
+static void query_select_add_order_by_attr(query_t *query, token_t token)
 {
     query->as.select.has_order = true;
     strncpy(query->as.select.order_by_attr, token.start, (size_t)token.length);
 }
 
-static void query_add_sort_order(query_t *query, token_t token)
+static void query_select_add_sort_order(query_t *query, token_t token)
 {
     if (token.type == TOKEN_ASC) {
         query->as.select.order_type = SORT_ASC;
@@ -326,7 +337,7 @@ static void parse_predicate(parser_t *parser)
     }
     token_t right = parser->previous;
 
-    query_add_pred(parser->query, left, op, right);
+    query_select_add_pred(parser->query, left, op, right);
 }
 
 static void parse_order(parser_t *parser)
@@ -334,10 +345,10 @@ static void parse_order(parser_t *parser)
     parser_consume(parser, TOKEN_BY, "ORDER should always be followed by BY");
 
     parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
-    query_add_order_by_attr(parser->query, parser->previous);
+    query_select_add_order_by_attr(parser->query, parser->previous);
 
     if (parser_match(parser, TOKEN_ASC) || parser_match(parser, TOKEN_DESC))
-        query_add_sort_order(parser->query, parser->previous);
+        query_select_add_sort_order(parser->query, parser->previous);
 }
 
 static void parse_select(parser_t *parser)
@@ -345,7 +356,7 @@ static void parse_select(parser_t *parser)
     /* Collect attribute names */
     do {
         parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
-        query_add_attr(parser->query, parser->previous);
+        query_select_add_attr(parser->query, parser->previous);
     } while (parser_match(parser, TOKEN_COMMA));
 
     /* Collect relation names */
@@ -353,7 +364,7 @@ static void parse_select(parser_t *parser)
 
     do {
         parser_consume(parser, TOKEN_IDENT, "Relation name expected");
-        query_add_rel(parser->query, parser->previous);
+        query_select_add_rel(parser->query, parser->previous);
     } while (parser_match(parser, TOKEN_COMMA));
 
     /* Collect filtering predicates */
@@ -368,14 +379,32 @@ static void parse_select(parser_t *parser)
         parse_order(parser);
 }
 
+static void parser_create_table(parser_t *parser)
+{
+    /* Relation name */
+    parser_consume(parser, TOKEN_IDENT, "Relation name expected");
+    query_create_table_add_rel(parser->query, parser->previous);
+
+    /* Attribute list */
+    parser_consume(parser, TOKEN_LPAREN, "LPAREN expected");
+    do {
+        parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
+        query_create_table_add_attr(parser->query, parser->previous);
+    } while (parser_match(parser, TOKEN_COMMA));
+    parser_consume(parser, TOKEN_RPAREN, "RPAREN expected");
+}
+
 static void parse_query(parser_t *parser)
 {
-    /* NOTE: we only match a single query type for now */
     if (parser_match(parser, TOKEN_SELECT)) {
         parser->query->tag = QUERY_SELECT;
         parse_select(parser);
+    } else if (parser_match(parser, TOKEN_CREATE)) {
+        parser_consume(parser, TOKEN_TABLE, "TABLE expected");
+        parser->query->tag = QUERY_CREATE_TABLE;
+        parser_create_table(parser);
     } else
-        parser_error(parser, "Only SELECT query is supported");
+        parser_error(parser, "Query type unsupported");
 
     parser_consume(parser, TOKEN_SEMICOLON, "Queries should end with a semicolon");
     parser_consume(parser, TOKEN_EOS, "Only single line queries are supported");
@@ -389,7 +418,6 @@ bool parser_parse(parser_t *parser, scanner_t *scanner, query_t *query)
      parser->had_error = false;
 
      parser_advance(parser);
-
      while (!parser_match(parser, TOKEN_EOS))
          parse_query(parser);
 

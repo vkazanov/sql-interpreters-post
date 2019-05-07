@@ -35,7 +35,7 @@ void relation_fill_from_table(relation_t *relation,
                               const value_type_t *table,
                               const uint32_t table_tuple_num);
 
-void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order order);
+void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order_t order);
 
 value_type_t *relation_tuple_values_by_id(const relation_t *rel, const uint32_t tuple_i);
 
@@ -145,7 +145,7 @@ void select_op_destroy(operator_t *operator);
 operator_t *sort_op_create(operator_t *source,
                            relation_t *tmp_relation,
                            attr_name_t sort_attr_name,
-                           sort_order order);
+                           sort_order_t order);
 
 void sort_op_destroy(operator_t *operator);
 

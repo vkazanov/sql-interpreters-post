@@ -22,10 +22,10 @@
 /* maximum number of predicates per query */
 #define MAX_PRED_NUM UINT16_MAX
 
-typedef enum sort_order {
-    SORT_ASC,
+typedef enum sort_order_t {
+    SORT_ASC = 0,
     SORT_DESC,
-} sort_order;
+} sort_order_t;
 
 typedef uint32_t value_type_t;  /* a single value type supported */
 typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */

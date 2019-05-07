@@ -55,6 +55,10 @@ typedef struct query_t {
 
     query_predicate_t predicates[MAX_PRED_NUM];
     uint16_t pred_num;
+
+    bool has_order;
+    attr_name_t order_by_attr;
+    sort_order_t order_type;
 } query_t;
 
 typedef struct parser_t parser_t;

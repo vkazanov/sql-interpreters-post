@@ -218,6 +218,21 @@ static void query_add_pred(query_t *query, token_t left_operand, token_t operato
     query->pred_num++;
 }
 
+static void query_add_order_by_attr(query_t *query, token_t token)
+{
+    query->has_order = true;
+    strncpy(query->order_by_attr, token.start, (size_t)token.length);
+}
+
+static void query_add_sort_order(query_t *query, token_t token)
+{
+    if (token.type == TOKEN_ASC) {
+        query->order_type = SORT_ASC;
+    } else {
+        query->order_type = SORT_DESC;
+    }
+}
+
 parser_t *parser_create(void)
 {
     parser_t *parser = calloc(1, sizeof(*parser));
@@ -310,6 +325,17 @@ static void parse_predicate(parser_t *parser)
     query_add_pred(parser->query, left, op, right);
 }
 
+static void parse_order(parser_t *parser)
+{
+    parser_consume(parser, TOKEN_BY, "ORDER should always be followed by BY");
+
+    parser_consume(parser, TOKEN_IDENT, "Attribute name expected");
+    query_add_order_by_attr(parser->query, parser->previous);
+
+    if (parser_match(parser, TOKEN_ASC) || parser_match(parser, TOKEN_DESC))
+        query_add_sort_order(parser->query, parser->previous);
+}
+
 static void parse_select(parser_t *parser)
 {
     /* Collect attribute names */
@@ -333,11 +359,9 @@ static void parse_select(parser_t *parser)
         } while (parser_match(parser, TOKEN_AND));
     }
 
-    /* /\* Order by *\/ */
-    /* if (parser_match(parser, TOKEN_ORDER_BY)) { */
-    /*     parse_order(parser); */
-    /* } */
-    /* TODO: ORDER BY ident [ASC/DESC] */
+    /* Order by */
+    if (parser_match(parser, TOKEN_ORDER))
+        parse_order(parser);
 }
 
 static void parse_query(parser_t *parser)

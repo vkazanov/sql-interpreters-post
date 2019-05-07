@@ -256,7 +256,7 @@ void relation_fill_from_table(
             rel->tuples[tuple_i * rel->attr_num + attr_i] = table[tuple_i * rel->attr_num + attr_i];
 }
 
-void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order order)
+void relation_order_by(relation_t *rel, const attr_name_t sort_attr_name, const sort_order_t order)
 {
     (void) order;
     uint16_t attr_i = relation_attr_i_by_name(rel, sort_attr_name);
@@ -877,7 +877,7 @@ typedef struct sort_op_state_t {
     /* Attribute to sort tuples by */
     attr_name_t sort_attr_name;
     /* Sort order, descending or ascending */
-    sort_order sort_order;
+    sort_order_t sort_order;
 
     /* Temporary relation to be used for sorting*/
     relation_t *tmp_relation;
@@ -923,7 +923,7 @@ void sort_op_close(void *state)
 operator_t *sort_op_create(operator_t *source,
                            relation_t *tmp_relation,
                            attr_name_t sort_attr_name,
-                           sort_order order)
+                           sort_order_t order)
 {
     assert(source);
 

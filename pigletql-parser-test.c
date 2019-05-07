@@ -172,25 +172,52 @@ int main(int argc, char *argv[])
         query_destroy(query);
     }
 
-    /* { */
-    /*     const char *query_str = "SELECT a1, a2 FROM r1 ORDER BY a3 DESC;"; */
+    {
+        const char *query_str = "SELECT a1, a2 FROM r1 ORDER BY a3 DESC;";
 
-    /*     scanner_t *scanner = scanner_create(query_str); */
-    /*     parser_t *parser = parser_create(); */
-    /*     query_t *query = query_create(); */
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
 
-    /*     assert(parser_parse(parser, scanner, query)); */
+        assert(parser_parse(parser, scanner, query));
+        assert(query->has_order);
+        assert(query->order_type == SORT_DESC);
+        assert(0 == strncmp(query->order_by_attr, "a3", MAX_ATTR_NAME_LEN));
 
-    /*     scanner_destroy(scanner); */
-    /*     parser_destroy(parser); */
-    /*     query_destroy(query); */
-    /* } */
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
 
-    /* TODO: */
-    /* { */
-    /*     const char *q1 = "SELECT a1, a2 FROM r1 ORDER BY a3 ASC"; */
+        query_str = "SELECT a1, a2 FROM r1 ORDER BY a3;";
 
-    /* } */
+        scanner = scanner_create(query_str);
+        parser = parser_create();
+        query = query_create();
+
+        assert(parser_parse(parser, scanner, query));
+        assert(query->has_order);
+        assert(query->order_type == SORT_ASC);
+        assert(0 == strncmp(query->order_by_attr, "a3", MAX_ATTR_NAME_LEN));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+
+        query_str = "SELECT a1, a2 FROM r1 ORDER BY a3 ASC;";
+
+        scanner = scanner_create(query_str);
+        parser = parser_create();
+        query = query_create();
+
+        assert(parser_parse(parser, scanner, query));
+        assert(query->has_order);
+        assert(query->order_type == SORT_ASC);
+        assert(0 == strncmp(query->order_by_attr, "a3", MAX_ATTR_NAME_LEN));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+    }
 
     return 0;
 }

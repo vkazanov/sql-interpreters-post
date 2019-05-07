@@ -24,9 +24,11 @@ typedef enum token_type {
     TOKEN_FROM,
     TOKEN_WHERE,
     TOKEN_AND,
-    /* TOKEN_ORDER_BY, */
-    /* TOKEN_ASC, */
-    /* TOKEN_DESC, */
+
+    TOKEN_ORDER,
+    TOKEN_BY,
+    TOKEN_ASC,
+    TOKEN_DESC,
 
     TOKEN_ERROR,
     TOKEN_EOS

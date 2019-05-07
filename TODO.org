@@ -13,17 +13,19 @@
 ** DONE scanner
 ** DONE prefix scanner-related function (or separate into a different module?)
 ** DONE SELECT - select x from y
+** DONE SELECT - where
 ** TODO SELECT - order by asc/desc
 ** TODO CREATE TABLE
 ** TODO DESCRIBE TABLE
 ** TODO INSERT INTO
-** TODO comments where needed
 ** TODO CLI util with just a parser attached
-** TODO Go through the error handling code
+** TODO Error handling
+** TODO Comments
 * TODO Query to Algebra compiler
 ** TODO query validation
 ** TODO query compilation
-* TODO Mention all the papers/books
+* TODO The Article
+* TODO Bibliography
 
   - book with a Java-based example
 

@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
     (void) argc; (void) argv;
 
-    /* Basic scanner test */
+    /* Basic SELECT scanner test */
     {
         const char *query = "SELECT *,attr1 FROM WHERE attr1=11;";
 
@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
         scanner_destroy(scanner);
     }
 
-    /* Basic scanner error */
+    /* ident scanner error test */
     {
         const char *query = "attr1 !1attr";
 
@@ -70,6 +70,31 @@ int main(int argc, char *argv[])
         assert(token.type == TOKEN_ERROR);
         const char *err_msg = "Unknown character";
         assert(0 == strncmp(token.start, err_msg, strlen(err_msg)));
+
+        scanner_destroy(scanner);
+    }
+
+    /* ORDER BY scanner test */
+    {
+        const char *query = "ORDER   BY ASC DESC";
+
+        scanner_t *scanner = scanner_create(query);
+
+        token_t token = scanner_next(scanner);
+        assert(token.type == TOKEN_ORDER);
+        assert(0 == strncmp(token.start, "ORDER", 5));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_BY);
+        assert(0 == strncmp(token.start, "BY", 2));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_ASC);
+        assert(0 == strncmp(token.start, "ASC", 3));
+
+        token = scanner_next(scanner);
+        assert(token.type == TOKEN_DESC);
+        assert(0 == strncmp(token.start, "DESC", 4));
 
         scanner_destroy(scanner);
     }
@@ -147,8 +172,25 @@ int main(int argc, char *argv[])
         query_destroy(query);
     }
 
+    /* { */
+    /*     const char *query_str = "SELECT a1, a2 FROM r1 ORDER BY a3 DESC;"; */
+
+    /*     scanner_t *scanner = scanner_create(query_str); */
+    /*     parser_t *parser = parser_create(); */
+    /*     query_t *query = query_create(); */
+
+    /*     assert(parser_parse(parser, scanner, query)); */
+
+    /*     scanner_destroy(scanner); */
+    /*     parser_destroy(parser); */
+    /*     query_destroy(query); */
+    /* } */
+
     /* TODO: */
-    /* const char *q1 = "SELECT a1, a2, a3 FROM r1, r2 ORDER BY a3 DESC/ASC"; */
+    /* { */
+    /*     const char *q1 = "SELECT a1, a2 FROM r1 ORDER BY a3 ASC"; */
+
+    /* } */
 
     return 0;
 }

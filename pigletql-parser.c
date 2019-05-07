@@ -123,7 +123,17 @@ static token_type scan_ident_type(scanner_t *scanner)
     case 's': return scan_keyword(scanner, 1, 5, "elect", TOKEN_SELECT);
     case 'f': return scan_keyword(scanner, 1, 3, "rom", TOKEN_FROM);
     case 'w': return scan_keyword(scanner, 1, 4, "here", TOKEN_WHERE);
-    case 'a': return scan_keyword(scanner, 1, 2, "nd", TOKEN_AND);
+    case 'a': {
+        /* either AND or ASC here */
+        token_type t = scan_keyword(scanner, 1, 2, "nd", TOKEN_AND);
+        if (t != TOKEN_IDENT)
+            return t;
+
+        return scan_keyword(scanner, 1, 2, "sc", TOKEN_ASC);;
+    }
+    case 'o': return scan_keyword(scanner, 1, 4, "rder", TOKEN_ORDER);
+    case 'b': return scan_keyword(scanner, 1, 1, "y", TOKEN_BY);
+    case 'd': return scan_keyword(scanner, 1, 3, "esc", TOKEN_DESC);
     }
     return TOKEN_IDENT;
 }
@@ -322,6 +332,12 @@ static void parse_select(parser_t *parser)
             parse_predicate(parser);
         } while (parser_match(parser, TOKEN_AND));
     }
+
+    /* /\* Order by *\/ */
+    /* if (parser_match(parser, TOKEN_ORDER_BY)) { */
+    /*     parse_order(parser); */
+    /* } */
+    /* TODO: ORDER BY ident [ASC/DESC] */
 }
 
 static void parse_query(parser_t *parser)

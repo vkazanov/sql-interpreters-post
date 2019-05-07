@@ -285,13 +285,22 @@ void parser_destroy(parser_t *parser)
 
 static void parser_error_at(parser_t *parser, token_t token, const char *msg)
 {
-    (void) token;
     if (parser->had_error)
         return;
-    parser->had_error = true;
 
-    fprintf(stderr, "Error: ");
-    fprintf(stderr, "%s\n", msg);
+    fprintf(stderr, "Error");
+
+    if (token.type == TOKEN_EOS) {
+        fprintf(stderr, " at end");
+    } else if (token.type == TOKEN_ERROR) {
+        /* Just skip */
+    } else {
+        fprintf(stderr, " parsing '%.*s'", token.length, token.start);
+    }
+
+    fprintf(stderr, ": %s\n", msg);
+
+    parser->had_error = true;
 }
 
 static void parser_error(parser_t *parser, const char* msg) {
@@ -459,8 +468,11 @@ bool parser_parse(parser_t *parser, scanner_t *scanner, query_t *query)
      parser->had_error = false;
 
      parser_advance(parser);
-     while (!parser_match(parser, TOKEN_EOS))
+     while (!parser_match(parser, TOKEN_EOS)) {
          parse_query(parser);
+         if (parser->had_error)
+             break;
+     }
 
      return !parser->had_error;
 }

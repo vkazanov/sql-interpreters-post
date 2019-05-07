@@ -1,5 +1,8 @@
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
 
 #include "pigletql-parser.h"
 
@@ -344,6 +347,113 @@ static void insert_test(void)
 
 }
 
+static void error_test(void)
+{
+    /* Block stderr output to avoid err msg spamming */
+    int null_fd = open("/dev/null", O_WRONLY);
+    int stderr_fd = dup(2);
+    dup2(null_fd, 2);
+
+    /* INSERT errors */
+    {
+        /* No INTO */
+        const char *query_str = "INSERT rel1 VALUES (111, 222);";
+
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(scanner);
+        assert(parser);
+        assert(query);
+
+        assert(!parser_parse(parser, scanner, query));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+
+        /* No VALUES */
+        query_str = "INSERT INTO rel1 (111, 222);";
+
+        scanner = scanner_create(query_str);
+        parser = parser_create();
+        query = query_create();
+
+        assert(!parser_parse(parser, scanner, query));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+
+        /* Invalid value list */
+        query_str = "INSERT INTO rel1 VALUES ();";
+
+        scanner = scanner_create(query_str);
+        parser = parser_create();
+        query = query_create();
+
+        assert(!parser_parse(parser, scanner, query));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+
+        query_str = "INSERT INTO rel1 VALUES (111,);";
+
+        scanner = scanner_create(query_str);
+        parser = parser_create();
+        query = query_create();
+
+        assert(!parser_parse(parser, scanner, query));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+    }
+
+    /* CREATE TABLE errors */
+    {
+        const char *query_str = "CREATE rel1;";
+
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+
+        assert(!parser_parse(parser, scanner, query));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+
+        query_str = "CREATE TABLE rel1;";
+
+        scanner = scanner_create(query_str);
+        parser = parser_create();
+        query = query_create();
+
+        assert(!parser_parse(parser, scanner, query));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+
+        query_str = "CREATE TABLE rel1 (a1,);";
+
+        scanner = scanner_create(query_str);
+        parser = parser_create();
+        query = query_create();
+
+        assert(!parser_parse(parser, scanner, query));
+
+        scanner_destroy(scanner);
+        parser_destroy(parser);
+        query_destroy(query);
+    }
+
+    /* Get back normal stderr */
+    dup2(stderr_fd, 2);
+}
+
 int main(int argc, char *argv[])
 {
     (void) argc; (void) argv;
@@ -351,6 +461,8 @@ int main(int argc, char *argv[])
     select_test();
     create_table_test();
     insert_test();
+
+    error_test();
 
     return 0;
 }

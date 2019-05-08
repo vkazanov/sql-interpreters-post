@@ -18,10 +18,11 @@
 ** DONE CREATE TABLE
 ** DONE INSERT INTO
 ** DONE Error handling
-* TODO [1/5] Query Evaluator
+* TODO [2/6] Query Evaluator
 ** DONE CLI util with just a parser attached
-** TODO query parse dumper
-** TODO create table
+** DONE query parse dumper
+** TODO catalogue
+** TODO create table (validate & execute)
 ** TODO insert (validate & execute)
 ** TODO select (validate & execute)
 ** TODO Comments

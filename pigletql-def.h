@@ -2,6 +2,7 @@
 #define PIGLETQL_DEF_H
 
 #include <stdint.h>
+#include <inttypes.h>
 
 /*
  * Common definitions
@@ -27,7 +28,9 @@ typedef enum sort_order_t {
     SORT_DESC,
 } sort_order_t;
 
+#define PRI_VALUE PRIu32
 typedef uint32_t value_type_t;  /* a single value type supported */
+
 typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */
 typedef char rel_name_t[MAX_REL_NAME_LEN]; /* relation names are fixed-size strings */
 

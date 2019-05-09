@@ -29,7 +29,7 @@
 ** DONE select (validate)
 ** TODO select (compile/eval)
 ** TODO validation tests (select/create/insert) - will need a catalogue as an arg
-** TODO Comments
+** TODO Code comments
 * TODO The Article
 * TODO Bibliography
 

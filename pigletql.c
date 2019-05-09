@@ -182,9 +182,9 @@ bool validate_select(const query_select_t *query)
     for (size_t pred_i = 0; pred_i < query->pred_num; pred_i++) {
         const query_predicate_t *predicate = &query->predicates[pred_i];
 
-        /* Attribute on the left? */
-        token_t token = predicate->left;
-        if (token.type == TOKEN_IDENT) {
+        /* Attribute on the left should always be there */
+        {
+            token_t token = predicate->left;
             char attr_name_buf[512] = {0};
             strncpy(attr_name_buf, token.start, MAX_ATTR_NAME_LEN);
 
@@ -196,15 +196,17 @@ bool validate_select(const query_select_t *query)
         }
 
         /* Attribute on the right? */
-        token = predicate->right;
-        if (token.type == TOKEN_IDENT) {
-            char attr_name_buf[512] = {0};
-            strncpy(attr_name_buf, token.start, MAX_ATTR_NAME_LEN);
+        {
+            token_t token = predicate->right;
+            if (token.type == TOKEN_IDENT) {
+                char attr_name_buf[512] = {0};
+                strncpy(attr_name_buf, token.start, MAX_ATTR_NAME_LEN);
 
-            if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
-                const char *msg = "Error: unknown right-hand side attribute name '%s' in predicate %zu\n";
-                fprintf(stderr, msg, attr_name_buf, pred_i);
-                return false;
+                if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
+                    const char *msg = "Error: unknown right-hand side attribute name '%s' in predicate %zu\n";
+                    fprintf(stderr, msg, attr_name_buf, pred_i);
+                    return false;
+                }
             }
         }
     }

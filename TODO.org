@@ -18,7 +18,7 @@
 ** DONE CREATE TABLE
 ** DONE INSERT INTO
 ** DONE Error handling
-* TODO [7/10] Query Evaluator
+* TODO [8/11] Query Evaluator
 ** DONE CLI util with just a parser attached
 ** DONE query parse dumper
 ** DONE catalogue
@@ -26,8 +26,9 @@
 ** DONE insert (validate)
 ** DONE create table (eval)
 ** DONE insert (eval)
-** TODO select (validate)
+** DONE select (validate)
 ** TODO select (compile/eval)
+** TODO validation tests (select/create/insert) - will need a catalogue as an arg
 ** TODO Comments
 * TODO The Article
 * TODO Bibliography

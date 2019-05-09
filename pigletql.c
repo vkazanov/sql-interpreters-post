@@ -88,6 +88,51 @@ void dump(const query_t *query)
     }
 }
 
+static bool attr_in_attr_names(const attr_name_t attr_name, const attr_name_t *attr_names, const uint16_t attr_num)
+{
+    for (size_t attr_i = 0; attr_i < attr_num; attr_i++) {
+        if (0 != strncmp(attr_names[attr_i], attr_name, MAX_ATTR_NAME_LEN))
+            continue;
+        return true;
+    }
+    return false;
+
+}
+
+static bool attr_names_unique(const attr_name_t *attr_names, const uint16_t attr_num)
+{
+    for (size_t self_i = 0; self_i < attr_num; self_i++)
+        for (size_t other_i = 0; other_i < attr_num; other_i++) {
+            if (self_i == other_i)
+                continue;
+            if (0 != strncasecmp(attr_names[self_i], attr_names[other_i], MAX_ATTR_NAME_LEN))
+                continue;
+
+            const char *msg = "Error: duplicate attribute name '%s' at %zu and %zu\n";
+            fprintf(stderr, msg, attr_names[self_i], self_i, other_i);
+
+            return false;
+        }
+    return true;
+}
+
+static bool rel_names_unique(const rel_name_t *rel_names, const uint16_t rel_num)
+{
+    for (size_t self_i = 0; self_i < rel_num; self_i++)
+        for (size_t other_i = 0; other_i < rel_num; other_i++) {
+            if (self_i == other_i)
+                continue;
+            if (0 != strncasecmp(rel_names[self_i], rel_names[other_i], MAX_REL_NAME_LEN))
+                continue;
+
+            const char *msg = "Error: duplicate relation name '%s' at %zu and %zu\n";
+            fprintf(stderr, msg, rel_names[self_i], self_i, other_i);
+
+            return false;
+        }
+    return true;
+}
+
 bool validate_select(const query_select_t *query)
 {
     /* All the relations should exist */
@@ -99,30 +144,12 @@ bool validate_select(const query_select_t *query)
     }
 
     /* Relation names should be unique */
-    for (size_t self_i = 0; self_i < query->rel_num; self_i++)
-        for (size_t other_i = 0; other_i < query->rel_num; other_i++) {
-            if (self_i == other_i)
-                continue;
-            if (0 != strncasecmp(query->rel_names[self_i], query->rel_names[other_i], MAX_REL_NAME_LEN))
-                continue;
-
-            const char *msg = "Error: duplicate relation name '%s' at %zu and %zu\n";
-            fprintf(stderr, msg, query->rel_names[self_i], self_i, other_i);
-            return false;
-        }
+    if (!rel_names_unique(query->rel_names,query->rel_num))
+        return false;
 
     /* Attribute names should be unique */
-    for (size_t self_i = 0; self_i < query->attr_num; self_i++)
-        for (size_t other_i = 0; other_i < query->attr_num; other_i++) {
-            if (self_i == other_i)
-                continue;
-            if (0 != strncasecmp(query->attr_names[self_i], query->attr_names[other_i], MAX_ATTR_NAME_LEN))
-                continue;
-
-            const char *msg = "Error: duplicate attribute name '%s' at %zu and %zu\n";
-            fprintf(stderr, msg, query->attr_names[self_i], self_i, other_i);
-            return false;
-        }
+    if (!attr_names_unique(query->attr_names, query->attr_num))
+                return false;
 
     /* Attributes should be present in relations listed */
     for (size_t attr_i = 0; attr_i < query->attr_num; attr_i++) {
@@ -144,23 +171,43 @@ bool validate_select(const query_select_t *query)
 
     /* Order by attribute should be available in the list of attributes chosen */
     if (query->has_order) {
-        bool attr_found = false;
-        for (size_t attr_i = 0; attr_i < query->attr_num; attr_i++) {
-            if (0 != strncmp(query->attr_names[attr_i], query->order_by_attr, MAX_ATTR_NAME_LEN))
-                continue;
-
-            attr_found = true;
-            break;
-        }
-
-        if (!attr_found) {
+        if (!attr_in_attr_names(query->order_by_attr, query->attr_names, query->attr_num)) {
             const char *msg = "Error: unknown order by attribute '%s'\n";
             fprintf(stderr, msg, query->order_by_attr);
             return false;
         }
     }
 
-    /* TODO: predicate checks: attributes should be available */
+    /* Predicate attributes should be available in the list of attributes projected */
+    for (size_t pred_i = 0; pred_i < query->pred_num; pred_i++) {
+        const query_predicate_t *predicate = &query->predicates[pred_i];
+
+        /* Attribute on the left? */
+        token_t token = predicate->left;
+        if (token.type == TOKEN_IDENT) {
+            char attr_name_buf[512] = {0};
+            strncpy(attr_name_buf, token.start, MAX_ATTR_NAME_LEN);
+
+            if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
+                const char *msg = "Error: unknown left-hand side attribute name '%s' in predicate %zu\n";
+                fprintf(stderr, msg, attr_name_buf, pred_i);
+                return false;
+            }
+        }
+
+        /* Attribute on the right? */
+        token = predicate->right;
+        if (token.type == TOKEN_IDENT) {
+            char attr_name_buf[512] = {0};
+            strncpy(attr_name_buf, token.start, MAX_ATTR_NAME_LEN);
+
+            if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
+                const char *msg = "Error: unknown right-hand side attribute name '%s' in predicate %zu\n";
+                fprintf(stderr, msg, attr_name_buf, pred_i);
+                return false;
+            }
+        }
+    }
 
     return true;
 }
@@ -174,17 +221,8 @@ bool validate_create_table(const query_create_table_t *query)
     }
 
     /* Attribute names are unique */
-    for (size_t self_i = 0; self_i < query->attr_num; self_i++)
-        for (size_t other_i = 0; other_i < query->attr_num; other_i++) {
-            if (self_i == other_i)
-                continue;
-            if (0 != strncasecmp(query->attr_names[self_i], query->attr_names[other_i], MAX_ATTR_NAME_LEN))
-                continue;
-
-            const char *msg = "Error: duplicate attribute name '%s' at %zu and %zu\n";
-            fprintf(stderr, msg, query->attr_names[self_i], self_i, other_i);
-            return false;
-        }
+    if (!attr_names_unique(query->attr_names, query->attr_num))
+        return false;
 
     return true;
 }

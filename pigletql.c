@@ -90,7 +90,77 @@ void dump(const query_t *query)
 
 bool validate_select(const query_select_t *query)
 {
-    (void) query;
+    /* All the relations should exist */
+    for (size_t rel_i = 0; rel_i < query->rel_num; rel_i++) {
+        if (catalogue_get_relation(cat, query->rel_names[rel_i]))
+            continue;
+
+        fprintf(stderr, "Error: relation '%s' does not exist\n", query->rel_names[rel_i]);
+    }
+
+    /* Relation names should be unique */
+    for (size_t self_i = 0; self_i < query->rel_num; self_i++)
+        for (size_t other_i = 0; other_i < query->rel_num; other_i++) {
+            if (self_i == other_i)
+                continue;
+            if (0 != strncasecmp(query->rel_names[self_i], query->rel_names[other_i], MAX_REL_NAME_LEN))
+                continue;
+
+            const char *msg = "Error: duplicate relation name '%s' at %zu and %zu\n";
+            fprintf(stderr, msg, query->rel_names[self_i], self_i, other_i);
+            return false;
+        }
+
+    /* Attribute names should be unique */
+    for (size_t self_i = 0; self_i < query->attr_num; self_i++)
+        for (size_t other_i = 0; other_i < query->attr_num; other_i++) {
+            if (self_i == other_i)
+                continue;
+            if (0 != strncasecmp(query->attr_names[self_i], query->attr_names[other_i], MAX_ATTR_NAME_LEN))
+                continue;
+
+            const char *msg = "Error: duplicate attribute name '%s' at %zu and %zu\n";
+            fprintf(stderr, msg, query->attr_names[self_i], self_i, other_i);
+            return false;
+        }
+
+    /* Attributes should be present in relations listed */
+    for (size_t attr_i = 0; attr_i < query->attr_num; attr_i++) {
+        bool attr_found = false;
+        for (size_t rel_i = 0; rel_i < query->rel_num; rel_i++) {
+            relation_t *rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
+            if (!relation_has_attr(rel, query->attr_names[attr_i]))
+                continue;
+            attr_found = true;
+            break;
+        }
+        if (attr_found)
+            continue;
+
+        const char *msg = "Error: unknown attribute name '%s'\n";
+        fprintf(stderr, msg, query->attr_names[attr_i]);
+        return false;
+    }
+
+    /* Order by attribute should be available in the list of attributes chosen */
+    if (query->has_order) {
+        bool attr_found = false;
+        for (size_t attr_i = 0; attr_i < query->attr_num; attr_i++) {
+            if (0 != strncmp(query->attr_names[attr_i], query->order_by_attr, MAX_ATTR_NAME_LEN))
+                continue;
+
+            attr_found = true;
+            break;
+        }
+
+        if (!attr_found) {
+            const char *msg = "Error: unknown order by attribute '%s'\n";
+            fprintf(stderr, msg, query->order_by_attr);
+            return false;
+        }
+    }
+
+    /* TODO: predicate checks: attributes should be available */
 
     return true;
 }
@@ -111,7 +181,7 @@ bool validate_create_table(const query_create_table_t *query)
             if (0 != strncasecmp(query->attr_names[self_i], query->attr_names[other_i], MAX_ATTR_NAME_LEN))
                 continue;
 
-            const char *msg = "Error: duplicate relation attribute name '%s' at %zu and %zu\n";
+            const char *msg = "Error: duplicate attribute name '%s' at %zu and %zu\n";
             fprintf(stderr, msg, query->attr_names[self_i], self_i, other_i);
             return false;
         }

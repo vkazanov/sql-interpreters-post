@@ -60,3 +60,4 @@ pigletql
 pigletql-test
 pigletql-parser-test
 pigletql-eval-test
+pigletql-catalogue-test

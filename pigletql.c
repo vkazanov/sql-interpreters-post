@@ -4,6 +4,10 @@
 
 #include "pigletql-parser.h"
 #include "pigletql-eval.h"
+#include "pigletql-catalogue.h"
+
+/* We only have a single catalogue anyways so no need to pass it around */
+static catalogue_t *cat;
 
 void dump_predicate(const query_predicate_t *predicate)
 {
@@ -83,10 +87,16 @@ void dump(const query_t *query)
     }
 }
 
-void eval(const query_t *query)
+void validate(const query_t *query)
 {
     (void) query;
-    /* TODO: eval the parse result given some kind of state */
+    /* TODO: make sure the query is reasonable */
+}
+
+void compile(const query_t *query)
+{
+    (void) query;
+    /* TODO: compile the query into operators */
 }
 
 void run(const char *query_str)
@@ -99,7 +109,8 @@ void run(const char *query_str)
 
     if (parser_parse(parser, scanner, query)) {
         dump(query);
-        eval(query);
+        validate(query);
+        compile(query);
     }
 
     scanner_destroy(scanner);
@@ -110,6 +121,8 @@ void run(const char *query_str)
 int main(int argc, char *argv[])
 {
     (void) argc; (void) argv;
+
+    cat = catalogue_create();
 
     while (true) {
         char line[1024];
@@ -126,6 +139,8 @@ int main(int argc, char *argv[])
 
         run(line);
     }
+
+    catalogue_destroy(cat);
 
     return 0;
 }

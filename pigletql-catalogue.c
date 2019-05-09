@@ -24,8 +24,10 @@ catalogue_t *catalogue_create(void)
 
 void catalogue_destroy(catalogue_t *cat)
 {
-    for (record_t **this = &cat->record_list; *this; this = &(*this)->next)
+    for (record_t **this = &cat->record_list; *this; this = &(*this)->next) {
+        relation_destroy((*this)->relation);
         free(*this);
+    }
     free(cat);
 }
 

@@ -36,8 +36,6 @@ int main(int argc, char *argv[])
         assert(!catalogue_get_relation(cat, "no rel"));
 
         catalogue_destroy(cat);
-        relation_destroy(rel1);
-        relation_destroy(rel2);
     }
 
     return 0;

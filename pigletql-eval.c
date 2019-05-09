@@ -300,6 +300,31 @@ bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name)
     return relation_attr_i_by_name(rel, attr_name) != ATTR_NOT_FOUND;
 }
 
+uint32_t relation_get_tuple_num(const relation_t *rel)
+{
+    return rel->tuple_num;
+}
+
+static void relation_ensure_space(relation_t *rel)
+{
+    if (rel->tuple_num >= rel->tuple_slots) {
+        rel->tuple_slots += 1000;
+        const size_t bytes_needed = rel->tuple_slots * rel->attr_num * sizeof(value_type_t);
+        rel->tuples = realloc(rel->tuples, bytes_needed);
+        assert(rel->tuples);
+    }
+}
+
+static value_type_t *relation_get_new_slot(relation_t *rel)
+{
+    relation_ensure_space(rel);
+
+    value_type_t *tuple_slot = &rel->tuples[rel->tuple_num * rel->attr_num];
+    rel->tuple_num++;
+
+    return tuple_slot;
+}
+
 void relation_append_tuple(relation_t *rel, const tuple_t *tuple)
 {
     /* check attribute compatibility  */
@@ -308,21 +333,22 @@ void relation_append_tuple(relation_t *rel, const tuple_t *tuple)
     for (size_t attr_i = 0; attr_i < tuple_attr_num; ++attr_i)
         assert(strncmp(rel->attr_names[attr_i], tuple_get_attr_name_by_i(tuple, attr_i), MAX_ATTR_NAME_LEN) == 0);
 
-    /* check available space and extend if needed */
-    if (rel->tuple_num >= rel->tuple_slots) {
-        rel->tuple_slots += 1000;
-        const size_t bytes_needed = rel->tuple_slots * tuple_attr_num * sizeof(value_type_t);
-        rel->tuples = realloc(rel->tuples, bytes_needed);
-        assert(rel->tuples);
-    }
-
     /* copy tuple data */
-    value_type_t *tuple_slot = &rel->tuples[rel->tuple_num * tuple_attr_num];
+    value_type_t *tuple_slot = relation_get_new_slot(rel);
     for (size_t attr_i = 0; attr_i < tuple_attr_num; attr_i++)
         tuple_slot[attr_i] = tuple_get_attr_value_by_i(tuple, attr_i);
 
-    /* Grow the relation */
-    rel->tuple_num++;
+}
+
+void relation_append_values(relation_t *rel, const value_type_t *values)
+{
+    /* No checks here as data should be already validated by now */
+
+    /* copy values */
+    value_type_t *tuple_slot = relation_get_new_slot(rel);
+    for (size_t attr_i = 0; attr_i < rel->attr_num; attr_i++)
+        tuple_slot[attr_i] = values[attr_i];
+
 }
 
 void relation_reset(relation_t *rel)

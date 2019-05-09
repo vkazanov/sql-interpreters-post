@@ -53,6 +53,34 @@ int main(int argc, char *argv[])
         relation_destroy(relation);
     }
 
+    /* Check appending raw values to a relation */
+    {
+        const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+        const uint16_t attr_num = ARRAY_SIZE(attr_names);
+
+        relation_t *relation = relation_create(attr_names, attr_num);
+        assert(relation);
+
+        const value_type_t values[] = {1, 2, 3};
+
+        relation_append_values(relation, values);
+        assert(relation_get_tuple_num(relation) == 1);
+
+        value_type_t *tuple_start = relation_tuple_values_by_id(relation, 0);
+        assert(tuple_start[0] == 1);
+        assert(tuple_start[1] == 2);
+        assert(tuple_start[2] == 3);
+
+        relation_append_values(relation, values);
+        assert(relation_get_tuple_num(relation) == 2);
+        tuple_start = relation_tuple_values_by_id(relation, 1);
+        assert(tuple_start[0] == 1);
+        assert(tuple_start[1] == 2);
+        assert(tuple_start[2] == 3);
+
+        relation_destroy(relation);
+    }
+
     /* Check the basic relation scan operator */
     {
 

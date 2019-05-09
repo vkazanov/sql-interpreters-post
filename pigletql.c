@@ -90,6 +90,8 @@ void dump(const query_t *query)
 
 bool validate_select(const query_select_t *query)
 {
+    (void) query;
+
     return true;
 }
 
@@ -151,16 +153,56 @@ bool validate(const query_t *query)
     assert(false);
 }
 
-void eval(const query_t *query)
+bool eval_select(const query_select_t *query)
 {
     (void) query;
-    /* TODO: compile the query into operators */
+
+    return true;
 }
+
+bool eval_create_table(const query_create_table_t *query)
+{
+    relation_t *rel = relation_create(query->attr_names, query->attr_num);
+    if (!rel)
+        goto rel_err;
+
+    if (!catalogue_add_relation(cat, query->rel_name, rel))
+        goto cat_err;
+
+    return true;
+
+cat_err:
+    relation_destroy(rel);
+
+rel_err:
+    return false;
+}
+
+bool eval_insert(const query_insert_t *query)
+{
+    relation_t *rel = catalogue_get_relation(cat, query->rel_name);
+    assert(rel);                /* should be validated by now */
+
+    /* TODO: append values to a relation */
+
+    return true;
+}
+
+bool eval(const query_t *query)
+{
+     switch (query->tag) {
+     case QUERY_SELECT:
+         return eval_select(&query->as.select);
+     case QUERY_CREATE_TABLE:
+         return eval_create_table(&query->as.create_table);
+     case QUERY_INSERT:
+         return eval_insert(&query->as.insert);
+     }
+     assert(false);
+ }
 
 void run(const char *query_str)
 {
-    printf("%s\n", query_str);
-
     scanner_t *scanner = scanner_create(query_str);
     parser_t *parser = parser_create();
     query_t *query = query_create();

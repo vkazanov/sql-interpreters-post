@@ -47,7 +47,11 @@ bool relation_has_attr(const relation_t *rel, const attr_name_t attr_name);
 
 uint16_t relation_get_attr_num(const relation_t *rel);
 
+uint32_t relation_get_tuple_num(const relation_t *rel);
+
 void relation_append_tuple(relation_t *rel, const tuple_t *tuple);
+
+void relation_append_values(relation_t *rel, const value_type_t *values);
 
 void relation_reset(relation_t *relation);
 

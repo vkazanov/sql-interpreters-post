@@ -183,7 +183,7 @@ bool eval_insert(const query_insert_t *query)
     relation_t *rel = catalogue_get_relation(cat, query->rel_name);
     assert(rel);                /* should be validated by now */
 
-    /* TODO: append values to a relation */
+    relation_append_values(rel, query->values);
 
     return true;
 }

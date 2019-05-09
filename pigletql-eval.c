@@ -232,7 +232,6 @@ relation_t *relation_create(const attr_name_t *attr_names, const uint16_t attr_n
     relation_t *rel = calloc(1, sizeof(*rel));
     if (!rel)
         return NULL;
-    *rel = (typeof(*rel)) { 0 };
 
     rel->attr_num = attr_num;
     for(size_t attr_i = 0; attr_i < attr_num; attr_i++)

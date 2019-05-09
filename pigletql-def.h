@@ -34,4 +34,7 @@ typedef uint32_t value_type_t;  /* a single value type supported */
 typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */
 typedef char rel_name_t[MAX_REL_NAME_LEN]; /* relation names are fixed-size strings */
 
+/* just a helper macro */
+#define ARRAY_SIZE(arr) sizeof(arr) / sizeof((arr)[0])
+
 #endif //PIGLETQL_DEF_H

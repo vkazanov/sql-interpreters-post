@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include "pigletql-parser.h"
 #include "pigletql-eval.h"
@@ -94,11 +95,46 @@ bool validate_select(const query_select_t *query)
 
 bool validate_create_table(const query_create_table_t *query)
 {
+    /* A relation should not exists */
+    if (catalogue_get_relation(cat, query->rel_name)) {
+        fprintf(stderr, "Error: relation '%s' already exists\n", query->rel_name);
+        return false;
+    }
+
+    /* Attribute names are unique */
+    for (size_t self_i = 0; self_i < query->attr_num; self_i++)
+        for (size_t other_i = 0; other_i < query->attr_num; other_i++) {
+            if (self_i == other_i)
+                continue;
+            if (0 != strncasecmp(query->attr_names[self_i], query->attr_names[other_i], MAX_ATTR_NAME_LEN))
+                continue;
+
+            const char *msg = "Error: duplicate relation attribute name '%s' at %zu and %zu\n";
+            fprintf(stderr, msg, query->attr_names[self_i], self_i, other_i);
+            return false;
+        }
+
     return true;
 }
 
 bool validate_insert(const query_insert_t *query)
 {
+    /* A relation should exists */
+    relation_t *target_rel = catalogue_get_relation(cat, query->rel_name);
+    if (!target_rel) {
+        fprintf(stderr, "Error: relation '%s' does not exist\n", query->rel_name);
+        return false;
+    }
+
+    /* Number of attribute values to be inserted should be correct */
+    uint16_t rel_attr_num = relation_get_attr_num(target_rel);
+    uint16_t query_attr_num = query->value_num;
+    if (rel_attr_num != query_attr_num) {
+        fprintf(stderr, "Error: relation '%s' has %"PRIu16" attributes, only %"PRIu16" supplied\n",
+                query->rel_name, rel_attr_num, query_attr_num);
+        return false;
+    }
+
     return true;
 }
 

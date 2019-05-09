@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -std=gnu11 -O2 -g
 
-all: test
+all: pigletql
 
 test: pigletql-eval-test pigletql-parser-test pigletql-catalogue-test
 	./pigletql-eval-test

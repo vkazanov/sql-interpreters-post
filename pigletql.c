@@ -87,13 +87,35 @@ void dump(const query_t *query)
     }
 }
 
-void validate(const query_t *query)
+bool validate_select(const query_select_t *query)
 {
-    (void) query;
-    /* TODO: make sure the query is reasonable */
+    return true;
 }
 
-void compile(const query_t *query)
+bool validate_create_table(const query_create_table_t *query)
+{
+    return true;
+}
+
+bool validate_insert(const query_insert_t *query)
+{
+    return true;
+}
+
+bool validate(const query_t *query)
+{
+    switch (query->tag) {
+    case QUERY_SELECT:
+        return validate_select(&query->as.select);
+    case QUERY_CREATE_TABLE:
+        return validate_create_table(&query->as.create_table);
+    case QUERY_INSERT:
+        return validate_insert(&query->as.insert);
+     }
+    assert(false);
+}
+
+void eval(const query_t *query)
 {
     (void) query;
     /* TODO: compile the query into operators */
@@ -109,8 +131,8 @@ void run(const char *query_str)
 
     if (parser_parse(parser, scanner, query)) {
         dump(query);
-        validate(query);
-        compile(query);
+        if (validate(query))
+            eval(query);
     }
 
     scanner_destroy(scanner);

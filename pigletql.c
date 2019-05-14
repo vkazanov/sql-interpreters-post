@@ -7,9 +7,6 @@
 #include "pigletql-eval.h"
 #include "pigletql-catalogue.h"
 
-/* We only have a single catalogue anyways so no need to pass it around */
-static catalogue_t *cat;
-
 void dump_predicate(const query_predicate_t *predicate)
 {
     char buf[1024] = { 0 };
@@ -133,7 +130,7 @@ static bool rel_names_unique(const rel_name_t *rel_names, const uint16_t rel_num
     return true;
 }
 
-bool validate_select(const query_select_t *query)
+bool validate_select(catalogue_t *cat, const query_select_t *query)
 {
     /* All the relations should exist */
     for (size_t rel_i = 0; rel_i < query->rel_num; rel_i++) {
@@ -214,7 +211,7 @@ bool validate_select(const query_select_t *query)
     return true;
 }
 
-bool validate_create_table(const query_create_table_t *query)
+bool validate_create_table(catalogue_t *cat, const query_create_table_t *query)
 {
     /* A relation should not exists */
     if (catalogue_get_relation(cat, query->rel_name)) {
@@ -229,7 +226,7 @@ bool validate_create_table(const query_create_table_t *query)
     return true;
 }
 
-bool validate_insert(const query_insert_t *query)
+bool validate_insert(catalogue_t *cat, const query_insert_t *query)
 {
     /* A relation should exists */
     relation_t *target_rel = catalogue_get_relation(cat, query->rel_name);
@@ -250,27 +247,27 @@ bool validate_insert(const query_insert_t *query)
     return true;
 }
 
-bool validate(const query_t *query)
+bool validate(catalogue_t *cat, const query_t *query)
 {
     switch (query->tag) {
     case QUERY_SELECT:
-        return validate_select(&query->as.select);
+        return validate_select(cat, &query->as.select);
     case QUERY_CREATE_TABLE:
-        return validate_create_table(&query->as.create_table);
+        return validate_create_table(cat, &query->as.create_table);
     case QUERY_INSERT:
-        return validate_insert(&query->as.insert);
-     }
+        return validate_insert(cat, &query->as.insert);
+    }
     assert(false);
 }
 
-bool eval_select(const query_select_t *query)
+bool eval_select(catalogue_t *cat, const query_select_t *query)
 {
-    (void) query;
+    (void) query; (void) cat;
 
     return true;
 }
 
-bool eval_create_table(const query_create_table_t *query)
+bool eval_create_table(catalogue_t *cat, const query_create_table_t *query)
 {
     relation_t *rel = relation_create(query->attr_names, query->attr_num);
     if (!rel)
@@ -288,7 +285,7 @@ rel_err:
     return false;
 }
 
-bool eval_insert(const query_insert_t *query)
+bool eval_insert(catalogue_t *cat, const query_insert_t *query)
 {
     relation_t *rel = catalogue_get_relation(cat, query->rel_name);
     assert(rel);                /* should be validated by now */
@@ -298,20 +295,20 @@ bool eval_insert(const query_insert_t *query)
     return true;
 }
 
-bool eval(const query_t *query)
+bool eval(catalogue_t *cat, const query_t *query)
 {
      switch (query->tag) {
      case QUERY_SELECT:
-         return eval_select(&query->as.select);
+         return eval_select(cat, &query->as.select);
      case QUERY_CREATE_TABLE:
-         return eval_create_table(&query->as.create_table);
+         return eval_create_table(cat, &query->as.create_table);
      case QUERY_INSERT:
-         return eval_insert(&query->as.insert);
+         return eval_insert(cat, &query->as.insert);
      }
      assert(false);
  }
 
-void run(const char *query_str)
+void run(catalogue_t *cat, const char *query_str)
 {
     scanner_t *scanner = scanner_create(query_str);
     parser_t *parser = parser_create();
@@ -319,8 +316,8 @@ void run(const char *query_str)
 
     if (parser_parse(parser, scanner, query)) {
         dump(query);
-        if (validate(query))
-            eval(query);
+        if (validate(cat, query))
+            eval(cat, query);
     }
 
     scanner_destroy(scanner);
@@ -332,7 +329,7 @@ int main(int argc, char *argv[])
 {
     (void) argc; (void) argv;
 
-    cat = catalogue_create();
+    catalogue_t *cat = catalogue_create();
 
     while (true) {
         char line[1024];
@@ -347,7 +344,7 @@ int main(int argc, char *argv[])
         /* strip a newline at the end of the line */
         line[strlen(line) - 1] = '\0';
 
-        run(line);
+        run(cat, line);
     }
 
     catalogue_destroy(cat);

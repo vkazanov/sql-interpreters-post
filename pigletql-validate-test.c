@@ -165,7 +165,139 @@ static void insert_validate_test(void)
 
 static void select_validate_test(void)
 {
+    /* Select from a non-existing table */
+    {
+        const char *query_str = "SELECT a1 FROM rel1;";
 
+        catalogue_t *cat = catalogue_create();
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(cat);
+        assert(scanner);
+        assert(parser);
+        assert(query);
+        assert(parser_parse(parser, scanner, query));
+
+        assert(!validate(cat, query));
+
+        query_destroy(query);
+        parser_destroy(parser);
+        scanner_destroy(scanner);
+        catalogue_destroy(cat);
+    }
+
+    /* Select attributes not present in tables */
+    {
+        const char *query_str = "SELECT n1 FROM rel1;";
+
+        catalogue_t *cat = catalogue_create();
+        {
+            const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+            const size_t attr_num = ARRAY_SIZE(attr_names);
+            relation_t *rel1 = relation_create(attr_names, attr_num);
+            catalogue_add_relation(cat, "rel1", rel1);
+        }
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(cat);
+        assert(scanner);
+        assert(parser);
+        assert(query);
+        assert(parser_parse(parser, scanner, query));
+
+        assert(!validate(cat, query));
+
+        query_destroy(query);
+        parser_destroy(parser);
+        scanner_destroy(scanner);
+        catalogue_destroy(cat);
+    }
+
+    /* Order by attributes not listed */
+    {
+        const char *query_str = "SELECT attr1 FROM rel1 ORDER BY n1;";
+
+        catalogue_t *cat = catalogue_create();
+        {
+            const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+            const size_t attr_num = ARRAY_SIZE(attr_names);
+            relation_t *rel1 = relation_create(attr_names, attr_num);
+            catalogue_add_relation(cat, "rel1", rel1);
+        }
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(cat);
+        assert(scanner);
+        assert(parser);
+        assert(query);
+        assert(parser_parse(parser, scanner, query));
+
+        assert(!validate(cat, query));
+
+        query_destroy(query);
+        parser_destroy(parser);
+        scanner_destroy(scanner);
+        catalogue_destroy(cat);
+    }
+
+    /* Predicates should only use attributes listed */
+    {
+        const char *query_str = "SELECT attr1 FROM rel1 WHERE n1=10;";
+
+        catalogue_t *cat = catalogue_create();
+        {
+            const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+            const size_t attr_num = ARRAY_SIZE(attr_names);
+            relation_t *rel1 = relation_create(attr_names, attr_num);
+            catalogue_add_relation(cat, "rel1", rel1);
+        }
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(cat);
+        assert(scanner);
+        assert(parser);
+        assert(query);
+        assert(parser_parse(parser, scanner, query));
+
+        assert(!validate(cat, query));
+
+        query_destroy(query);
+        parser_destroy(parser);
+        scanner_destroy(scanner);
+        catalogue_destroy(cat);
+    }
+
+    /* A correct query */
+    {
+        const char *query_str = "SELECT attr1 FROM rel1 WHERE attr1=10 ORDER BY attr1 DESC;";
+
+        catalogue_t *cat = catalogue_create();
+        {
+            const attr_name_t attr_names[] = {"id", "attr1", "attr2"};
+            const size_t attr_num = ARRAY_SIZE(attr_names);
+            relation_t *rel1 = relation_create(attr_names, attr_num);
+            catalogue_add_relation(cat, "rel1", rel1);
+        }
+        scanner_t *scanner = scanner_create(query_str);
+        parser_t *parser = parser_create();
+        query_t *query = query_create();
+        assert(cat);
+        assert(scanner);
+        assert(parser);
+        assert(query);
+        assert(parser_parse(parser, scanner, query));
+
+        assert(validate(cat, query));
+
+        query_destroy(query);
+        parser_destroy(parser);
+        scanner_destroy(scanner);
+        catalogue_destroy(cat);
+    }
 }
 
 int main(int argc, char *argv[])

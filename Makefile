@@ -6,7 +6,10 @@ TESTS = pigletql-eval-test pigletql-parser-test pigletql-catalogue-test pigletql
 all: pigletql
 
 test: $(TESTS)
-	$(foreach interpr,$(TESTS),./$(interpr);)
+	./pigletql-eval-test
+	./pigletql-parser-test
+	./pigletql-catalogue-test
+	./pigletql-validate-test
 
 pigletql: pigletql.c pigletql-parser.c pigletql-eval.c pigletql-catalogue.c pigletql-validate.c
 	$(CC) $(CFLAGS) $^ -o $@

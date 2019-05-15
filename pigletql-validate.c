@@ -53,6 +53,7 @@ static bool validate_select(catalogue_t *cat, const query_select_t *query)
             continue;
 
         fprintf(stderr, "Error: relation '%s' does not exist\n", query->rel_names[rel_i]);
+        return false;
     }
 
     /* Relation names should be unique */
@@ -98,7 +99,7 @@ static bool validate_select(catalogue_t *cat, const query_select_t *query)
         {
             token_t token = predicate->left;
             char attr_name_buf[512] = {0};
-            strncpy(attr_name_buf, token.start, MAX_ATTR_NAME_LEN);
+            strncpy(attr_name_buf, token.start, (size_t)token.length);
 
             if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
                 const char *msg = "Error: unknown left-hand side attribute name '%s' in predicate %zu\n";
@@ -112,7 +113,7 @@ static bool validate_select(catalogue_t *cat, const query_select_t *query)
             token_t token = predicate->right;
             if (token.type == TOKEN_IDENT) {
                 char attr_name_buf[512] = {0};
-                strncpy(attr_name_buf, token.start, MAX_ATTR_NAME_LEN);
+                strncpy(attr_name_buf, token.start, (size_t)token.length);
 
                 if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
                     const char *msg = "Error: unknown right-hand side attribute name '%s' in predicate %zu\n";

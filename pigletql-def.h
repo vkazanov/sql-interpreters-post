@@ -29,6 +29,7 @@ typedef enum sort_order_t {
 } sort_order_t;
 
 #define PRI_VALUE PRIu32
+#define SCN_VALUE SCNu32
 typedef uint32_t value_type_t;  /* a single value type supported */
 
 typedef char attr_name_t[MAX_ATTR_NAME_LEN]; /* attribute names are fixed-size strings */

@@ -141,8 +141,15 @@ bool eval_select(catalogue_t *cat, const query_select_t *query)
                 strncpy(right_attr_name, predicate.right.start, (size_t)predicate.right.length);
 
                 select_op_add_attr_attr_predicate(select_op, left_attr_name, pred_op, right_attr_name);
+            } else if (predicate.right.type == TOKEN_NUMBER) {
+                char buf[128] = {0};
+                strncpy(buf, predicate.right.start, (size_t)predicate.right.length);
+
+                value_type_t right_const = 0;
+                sscanf(buf, "%" SCN_VALUE, &right_const);
+
+                select_op_add_attr_const_predicate(select_op, left_attr_name, pred_op, right_const);
             } else {
-                /* TODO: number conversion */
                 assert(false);
             }
         }
@@ -174,7 +181,7 @@ bool eval_select(catalogue_t *cat, const query_select_t *query)
 
             /* attribute values for all rows*/
             for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
-                uint16_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
+                uint32_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
                 if (attr_i != attr_num - 1)
                     printf("%u ", attr_val);
                 else

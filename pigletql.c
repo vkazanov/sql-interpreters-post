@@ -86,10 +86,8 @@ void dump(const query_t *query)
     }
 }
 
-
-bool eval_select(catalogue_t *cat, const query_select_t *query)
+operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
 {
-    /* Compile the operator tree:  */
     operator_t *root_op = NULL;
 
     /* 1. Scan ops */
@@ -159,6 +157,42 @@ bool eval_select(catalogue_t *cat, const query_select_t *query)
     /* TODO: 5. Sort - external tmp relation needed?! but how do I know all the attrs after all the
      * joins? */
 
+    return root_op;
+}
+
+void dump_tuple_header(tuple_t *tuple)
+{
+    const uint16_t attr_num = tuple_get_attr_num(tuple);
+
+    for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
+        const char *attr_name = tuple_get_attr_name_by_i(tuple, attr_i);
+        if (attr_i != attr_num - 1)
+            printf("%s ", attr_name);
+        else
+            printf("%s\n", attr_name);
+    }
+}
+
+void dump_tuple(tuple_t *tuple)
+{
+    const uint16_t attr_num = tuple_get_attr_num(tuple);
+
+    /* attribute values for all rows*/
+    for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
+        uint32_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
+        if (attr_i != attr_num - 1)
+            printf("%u ", attr_val);
+        else
+            printf("%u\n", attr_val);
+    }
+}
+
+bool eval_select(catalogue_t *cat, const query_select_t *query)
+{
+    /* Compile the operator tree:  */
+    operator_t *root_op = compile_select(cat, query);
+
+
     /* Eval the tree: */
     {
         root_op->open(root_op->state);
@@ -166,27 +200,12 @@ bool eval_select(catalogue_t *cat, const query_select_t *query)
         size_t tuples_received = 0;
         tuple_t *tuple = NULL;
         while((tuple = root_op->next(root_op->state))) {
-            const uint16_t attr_num = tuple_get_attr_num(tuple);
-
             /* attribute list for the first row only */
-            if (tuples_received == 0) {
-                for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
-                    const char *attr_name = tuple_get_attr_name_by_i(tuple, attr_i);
-                    if (attr_i != attr_num - 1)
-                        printf("%s ", attr_name);
-                    else
-                        printf("%s\n", attr_name);
-                }
-            }
+            if (tuples_received == 0)
+                dump_tuple_header(tuple);
 
-            /* attribute values for all rows*/
-            for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
-                uint32_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
-                if (attr_i != attr_num - 1)
-                    printf("%u ", attr_val);
-                else
-                    printf("%u\n", attr_val);
-            }
+            /* A table of tuples */
+            dump_tuple(tuple);
 
             tuples_received++;
         }

@@ -18,7 +18,7 @@
 ** DONE CREATE TABLE
 ** DONE INSERT INTO
 ** DONE Error handling
-* TODO [10/12] Query Evaluator
+* TODO [12/18] Query Evaluator
 ** DONE CLI util with just a parser attached
 ** DONE query parse dumper
 ** DONE catalogue
@@ -29,7 +29,13 @@
 ** DONE select (validate)
 ** DONE catalogue as an arg
 ** DONE validation tests (select/create/insert)
-** TODO select (compile/eval)
+** DONE select (compile/eval) - scan/join
+** DONE select (compile/eval) - project
+** TODO select (compile/eval) - select
+** TODO select (compile/eval) - sort
+** TODO attr name type not used?
+** TODO attr value type not typedefed?
+** TODO destroy the op tree
 ** TODO Code comments
 * TODO The Article
 * TODO Bibliography

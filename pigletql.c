@@ -89,7 +89,106 @@ void dump(const query_t *query)
 
 bool eval_select(catalogue_t *cat, const query_select_t *query)
 {
-    (void) query; (void) cat;
+    /* Compile the operator tree:  */
+    operator_t *root_op = NULL;
+
+    /* 1. Scan ops */
+    /* 2. Join ops*/
+
+    {
+        size_t rel_i = 0;
+        relation_t *rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
+        root_op = scan_op_create(rel);
+        rel_i += 1;
+
+        for (; rel_i < query->rel_num; rel_i++) {
+            rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
+            operator_t *scan_op = scan_op_create(rel);
+            root_op = join_op_create(root_op, scan_op);
+        }
+    }
+
+    /* 3. Project */
+    root_op = proj_op_create(root_op, query->attr_names, query->attr_num);
+
+    /* 4. Select */
+    if (query->pred_num > 0) {
+        operator_t *select_op = select_op_create(root_op);
+        for (size_t pred_i = 0; pred_i < query->pred_num; pred_i++) {
+            query_predicate_t predicate = query->predicates[pred_i];
+            assert(predicate.left.type == TOKEN_IDENT);
+
+            attr_name_t left_attr_name = {0};
+            strncpy(left_attr_name, predicate.left.start, (size_t)predicate.left.length);
+
+            select_predicate_op pred_op = 0;
+            switch (predicate.op.type) {
+            case TOKEN_GREATER:
+                pred_op = SELECT_GT;
+                break;
+            case TOKEN_LESS:
+                pred_op = SELECT_LT;
+                break;
+            case TOKEN_EQUAL:
+                pred_op = SELECT_EQ;
+                break;
+            default:
+                assert(false);
+            }
+
+            if (predicate.right.type == TOKEN_IDENT) {
+                attr_name_t right_attr_name = {0};
+                strncpy(right_attr_name, predicate.right.start, (size_t)predicate.right.length);
+
+                select_op_add_attr_attr_predicate(select_op, left_attr_name, pred_op, right_attr_name);
+            } else {
+                /* TODO: number conversion */
+                assert(false);
+            }
+        }
+        root_op = select_op;
+    }
+
+    /* TODO: 5. Sort - external tmp relation needed?! but how do I know all the attrs after all the
+     * joins? */
+
+    /* Eval the tree: */
+    {
+        root_op->open(root_op->state);
+
+        size_t tuples_received = 0;
+        tuple_t *tuple = NULL;
+        while((tuple = root_op->next(root_op->state))) {
+            const uint16_t attr_num = tuple_get_attr_num(tuple);
+
+            /* attribute list for the first row only */
+            if (tuples_received == 0) {
+                for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
+                    const char *attr_name = tuple_get_attr_name_by_i(tuple, attr_i);
+                    if (attr_i != attr_num - 1)
+                        printf("%s ", attr_name);
+                    else
+                        printf("%s\n", attr_name);
+                }
+            }
+
+            /* attribute values for all rows*/
+            for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
+                uint16_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
+                if (attr_i != attr_num - 1)
+                    printf("%u ", attr_val);
+                else
+                    printf("%u\n", attr_val);
+            }
+
+            tuples_received++;
+        }
+        printf("rows: %zu\n", tuples_received);
+
+        root_op->close(root_op->state);
+    }
+
+    /* TODO: destroy the tree */
 
     return true;
 }

@@ -159,8 +159,9 @@ operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
         root_op = select_op;
     }
 
-    /* TODO: 5. Sort - external tmp relation needed?! but how do I know all the attrs after all the
-     * joins? */
+    /* 5. Sort */
+    if (query->has_order)
+        root_op = sort_op_create(root_op, query->order_by_attr, query->order_type);
 
     return root_op;
 }
@@ -182,7 +183,7 @@ void dump_tuple(tuple_t *tuple)
 {
     const uint16_t attr_num = tuple_get_attr_num(tuple);
 
-    /* attribute values for all rows*/
+    /* attribute values for all rows */
     for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
         uint32_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
         if (attr_i != attr_num - 1)

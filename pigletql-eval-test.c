@@ -702,8 +702,6 @@ int main(int argc, char *argv[])
 
         relation_t *relation = relation_create(attr_names, attr_num);
         assert(relation);
-        relation_t *tmp_relation = relation_create(attr_names, attr_num);
-        assert(tmp_relation);
 
         relation_fill_from_table(relation, &tuple_table[0][0], tuple_num);
 
@@ -712,7 +710,7 @@ int main(int argc, char *argv[])
             operator_t *scan_op = scan_op_create(relation);
             assert(scan_op);
 
-            operator_t *sort_op = sort_op_create(scan_op, tmp_relation, "id", SORT_ASC);
+            operator_t *sort_op = sort_op_create(scan_op, "id", SORT_ASC);
             assert(sort_op);
 
             sort_op->open(sort_op->state);
@@ -750,7 +748,7 @@ int main(int argc, char *argv[])
             operator_t *scan_op = scan_op_create(relation);
             assert(scan_op);
 
-            operator_t *sort_op = sort_op_create(scan_op, tmp_relation, "id", SORT_DESC);
+            operator_t *sort_op = sort_op_create(scan_op, "id", SORT_DESC);
             assert(sort_op);
 
             sort_op->open(sort_op->state);
@@ -784,7 +782,6 @@ int main(int argc, char *argv[])
         }
 
         relation_destroy(relation);
-        relation_destroy(tmp_relation);
     }
     return 0;
 }

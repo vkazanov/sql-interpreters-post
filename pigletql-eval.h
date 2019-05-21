@@ -31,6 +31,8 @@ typedef struct relation_t relation_t;
 
 relation_t *relation_create(const attr_name_t *attr_names, const uint16_t attr_num);
 
+relation_t *relation_create_for_tuple(const tuple_t *tuple);
+
 void relation_fill_from_table(relation_t *relation,
                               const value_type_t *table,
                               const uint32_t table_tuple_num);
@@ -147,9 +149,8 @@ void select_op_destroy(operator_t *operator);
  *  */
 
 operator_t *sort_op_create(operator_t *source,
-                           relation_t *tmp_relation,
-                           attr_name_t sort_attr_name,
-                           sort_order_t order);
+                           const attr_name_t sort_attr_name,
+                           const sort_order_t order);
 
 void sort_op_destroy(operator_t *operator);
 

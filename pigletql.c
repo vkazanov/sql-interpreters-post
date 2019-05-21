@@ -114,6 +114,8 @@ operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
         operator_t *select_op = select_op_create(root_op);
         for (size_t pred_i = 0; pred_i < query->pred_num; pred_i++) {
             query_predicate_t predicate = query->predicates[pred_i];
+
+            /* On the left we always get an identifier */
             assert(predicate.left.type == TOKEN_IDENT);
 
             attr_name_t left_attr_name = {0};
@@ -131,9 +133,11 @@ operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
                 pred_op = SELECT_EQ;
                 break;
             default:
+                /* Uknown predicate type */
                 assert(false);
             }
 
+            /* On the right it's either a constant or another identifier */
             if (predicate.right.type == TOKEN_IDENT) {
                 attr_name_t right_attr_name = {0};
                 strncpy(right_attr_name, predicate.right.start, (size_t)predicate.right.length);
@@ -148,6 +152,7 @@ operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
 
                 select_op_add_attr_const_predicate(select_op, left_attr_name, pred_op, right_const);
             } else {
+                /* Invalid token */
                 assert(false);
             }
         }

@@ -70,17 +70,22 @@ void relation_destroy(relation_t *relation);
  * close - closes the operator and resets its state
  * */
 
+typedef struct operator_t operator_t;
+
 typedef void (*op_open)(void *state);
 typedef tuple_t *(*op_next)(void *state);
 typedef void (*op_close)(void *state);
+typedef void (*op_destroy)(operator_t *state);
 
-/* The operator itself is just 3 pointers to related ops and operator state */
-typedef struct operator_t {
+/* The operator itself is just 4 pointers to related ops and operator state */
+struct operator_t {
     op_open open;
     op_next next;
     op_close close;
+    op_destroy destroy;
+
     void *state;
-} operator_t;
+} ;
 
 /*
  * Table scan operator just goes over all tuples in a relation.

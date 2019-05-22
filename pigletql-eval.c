@@ -424,6 +424,14 @@ void scan_op_close(void *state)
     current_tuple->as.source.tuple_i = 0;
 }
 
+void scan_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
 operator_t *scan_op_create(const relation_t *relation)
 {
     operator_t *op = calloc(1, sizeof(*op));
@@ -444,6 +452,7 @@ operator_t *scan_op_create(const relation_t *relation)
     op->open = scan_op_open;
     op->next = scan_op_next;
     op->close = scan_op_close;
+    op->destroy = scan_op_destroy;
 
     return op;
 
@@ -451,14 +460,6 @@ state_fail:
         free(op);
 op_fail:
     return NULL;
-}
-
-void scan_op_destroy(operator_t *operator)
-{
-    if (!operator)
-        return;
-    free(operator->state);
-    free(operator);
 }
 
 /* Projection operator */
@@ -499,6 +500,14 @@ void proj_op_close(void *state)
     source->close(source->state);
 }
 
+void proj_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
 operator_t *proj_op_create(operator_t *source,
                            const attr_name_t *attr_names,
                            const uint16_t attr_num)
@@ -525,6 +534,7 @@ operator_t *proj_op_create(operator_t *source,
     op->open = proj_op_open;
     op->next = proj_op_next;
     op->close = proj_op_close;
+    op->destroy = proj_op_destroy;
 
     return op;
 
@@ -532,14 +542,6 @@ state_fail:
     free(op);
 op_fail:
     return NULL;
-}
-
-void proj_op_destroy(operator_t *operator)
-{
-    if (!operator)
-        return;
-    free(operator->state);
-    free(operator);
 }
 
 /* Union operator */
@@ -594,6 +596,14 @@ void union_op_close(void *state)
     op_state->current_source = NULL;
 }
 
+void union_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
 operator_t *union_op_create(operator_t *left_source,
                             operator_t *right_source)
 {
@@ -614,6 +624,7 @@ operator_t *union_op_create(operator_t *left_source,
     op->open = union_op_open;
     op->next = union_op_next;
     op->close = union_op_close;
+    op->destroy = union_op_destroy;
 
     return op;
 
@@ -621,14 +632,6 @@ state_fail:
     free(op);
 op_fail:
     return NULL;
-}
-
-void union_op_destroy(operator_t *operator)
-{
-    if (!operator)
-        return;
-    free(operator->state);
-    free(operator);
 }
 
 /* Join operator */
@@ -703,6 +706,14 @@ void join_op_close(void *state)
     op_state->current_tuple.as.join.right_source_tuple = NULL;
 }
 
+void join_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
 operator_t *join_op_create(operator_t *left_source,
                            operator_t *right_source)
 {
@@ -723,6 +734,7 @@ operator_t *join_op_create(operator_t *left_source,
     op->open = join_op_open;
     op->next = join_op_next;
     op->close = join_op_close;
+    op->destroy = join_op_destroy;
 
     return op;
 
@@ -730,14 +742,6 @@ state_fail:
     free(op);
 op_fail:
     return NULL;
-}
-
-void join_op_destroy(operator_t *operator)
-{
-    if (!operator)
-        return;
-    free(operator->state);
-    free(operator);
 }
 
 /* Select operator */
@@ -834,6 +838,14 @@ void select_op_close(void *state)
     source->close(source->state);
 }
 
+void select_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
 void select_op_add_attr_const_predicate(operator_t *operator,
                                         const attr_name_t left_attr_name,
                                         const select_predicate_op predicate_op,
@@ -889,6 +901,7 @@ operator_t *select_op_create(operator_t *source)
     op->open = select_op_open;
     op->next = select_op_next;
     op->close = select_op_close;
+    op->destroy = select_op_destroy;
 
     return op;
 
@@ -896,14 +909,6 @@ state_fail:
     free(op);
 op_fail:
     return NULL;
-}
-
-void select_op_destroy(operator_t *operator)
-{
-    if (!operator)
-        return;
-    free(operator->state);
-    free(operator);
 }
 
 /* Sort operator */
@@ -964,6 +969,14 @@ void sort_op_close(void *state)
     }
 }
 
+void sort_op_destroy(operator_t *operator)
+{
+    if (!operator)
+        return;
+    free(operator->state);
+    free(operator);
+}
+
 operator_t *sort_op_create(operator_t *source,
                            const attr_name_t sort_attr_name,
                            const sort_order_t order)
@@ -986,6 +999,7 @@ operator_t *sort_op_create(operator_t *source,
     op->open = sort_op_open;
     op->next = sort_op_next;
     op->close = sort_op_close;
+    op->destroy = sort_op_destroy;
 
     return op;
 
@@ -993,12 +1007,4 @@ state_fail:
     free(op);
 op_fail:
     return NULL;
-}
-
-void sort_op_destroy(operator_t *operator)
-{
-    if (!operator)
-        return;
-    free(operator->state);
-    free(operator);
 }

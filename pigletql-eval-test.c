@@ -338,7 +338,7 @@ int main(int argc, char *argv[])
             proj_op->close(proj_op->state);
 
             proj_op_destroy(proj_op);
-            scan_op_destroy(scan_op);
+            /* scan_op_destroy(scan_op); */
         }
 
         relation_destroy(relation);

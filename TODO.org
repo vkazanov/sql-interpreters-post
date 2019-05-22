@@ -18,7 +18,7 @@
 ** DONE CREATE TABLE
 ** DONE INSERT INTO
 ** DONE Error handling
-* TODO [14/19] Query Evaluator
+* TODO [15/17] Query Evaluator
 ** DONE CLI util with just a parser attached
 ** DONE query parse dumper
 ** DONE catalogue
@@ -33,9 +33,7 @@
 ** DONE select (compile/eval) - project
 ** DONE select (compile/eval) - select
 ** DONE select (compile/eval) - sort
-** TODO attr name type not used?
-** TODO attr value type not typedefed?
-** TODO attr value type not used everywhere? where do all the uint16_t come from?
+** DONE attr name type not used?
 ** TODO destroy the op tree
 ** TODO Code comments
 * TODO The Article

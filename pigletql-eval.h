@@ -19,7 +19,7 @@ value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_n
 
 uint16_t tuple_get_attr_num(const tuple_t *tuple);
 
-uint16_t tuple_get_attr_value_by_i(const tuple_t *tuple, const uint16_t attr_i);
+value_type_t tuple_get_attr_value_by_i(const tuple_t *tuple, const uint16_t attr_i);
 
 const char *tuple_get_attr_name_by_i(const tuple_t *tuple, const uint16_t attr_i);
 

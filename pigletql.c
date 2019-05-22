@@ -185,7 +185,7 @@ void dump_tuple(tuple_t *tuple)
 
     /* attribute values for all rows */
     for (uint16_t attr_i = 0; attr_i < attr_num; attr_i++) {
-        uint32_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
+        value_type_t attr_val = tuple_get_attr_value_by_i(tuple, attr_i);
         if (attr_i != attr_num - 1)
             printf("%u ", attr_val);
         else

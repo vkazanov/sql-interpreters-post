@@ -146,19 +146,19 @@ uint16_t tuple_get_attr_num(const tuple_t *tuple)
         assert(false);
 }
 
-uint16_t tuple_source_get_attr_value_by_i(const tuple_source_t *tuple, const uint16_t attr_i)
+value_type_t tuple_source_get_attr_value_by_i(const tuple_source_t *tuple, const uint16_t attr_i)
 {
     return relation_tuple_values_by_id(tuple->relation, tuple->tuple_i)[attr_i];
 }
 
-uint16_t tuple_project_get_attr_value_by_i(const tuple_project_t *tuple, const uint16_t attr_i)
+value_type_t tuple_project_get_attr_value_by_i(const tuple_project_t *tuple, const uint16_t attr_i)
 {
     assert(attr_i < tuple->attr_num);
 
     return tuple_project_get_attr_value(tuple, tuple->attr_names[attr_i]);
 }
 
-uint16_t tuple_join_get_attr_value_by_i(const tuple_join_t *tuple, const uint16_t attr_i)
+value_type_t tuple_join_get_attr_value_by_i(const tuple_join_t *tuple, const uint16_t attr_i)
 {
     assert(attr_i < tuple_join_get_attr_num(tuple));
     const uint16_t left_source_attr_num = tuple_get_attr_num(tuple->left_source_tuple);
@@ -168,7 +168,7 @@ uint16_t tuple_join_get_attr_value_by_i(const tuple_join_t *tuple, const uint16_
         return tuple_get_attr_value_by_i(tuple->right_source_tuple, attr_i - left_source_attr_num);
 }
 
-uint16_t tuple_get_attr_value_by_i(const tuple_t *tuple, const uint16_t attr_i)
+value_type_t tuple_get_attr_value_by_i(const tuple_t *tuple, const uint16_t attr_i)
 {
     if (tuple->tag == TUPLE_SOURCE)
         return tuple_source_get_attr_value_by_i(&tuple->as.source, attr_i);

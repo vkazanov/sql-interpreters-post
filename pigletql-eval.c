@@ -504,6 +504,10 @@ void proj_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;
+
+    proj_op_state_t *op_state = operator->state;
+    op_state->source->destroy(op_state->source);
+
     free(operator->state);
     free(operator);
 }
@@ -600,6 +604,11 @@ void union_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;
+
+    union_op_state_t *op_state = operator->state;
+    op_state->left_source->destroy(op_state->left_source);
+    op_state->right_source->destroy(op_state->right_source);
+
     free(operator->state);
     free(operator);
 }
@@ -710,6 +719,11 @@ void join_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;
+
+    join_op_state_t *op_state = operator->state;
+    op_state->left_source->destroy(op_state->left_source);
+    op_state->right_source->destroy(op_state->right_source);
+
     free(operator->state);
     free(operator);
 }
@@ -842,6 +856,10 @@ void select_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;
+
+    select_op_state_t *op_state = operator->state;
+    op_state->source->destroy(op_state->source);
+
     free(operator->state);
     free(operator);
 }
@@ -973,6 +991,10 @@ void sort_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;
+
+    sort_op_state_t *op_state = operator->state;
+    op_state->source->destroy(op_state->source);
+
     free(operator->state);
     free(operator);
 }

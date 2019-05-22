@@ -93,8 +93,6 @@ struct operator_t {
 
 operator_t *scan_op_create(const relation_t *relation);
 
-void scan_op_destroy(operator_t *operator);
-
 /*
  * Projection operator chooses a subset of attributes.
  *  */
@@ -103,16 +101,12 @@ operator_t *proj_op_create(operator_t *source,
                            const attr_name_t *tuple_attr_names,
                            const uint16_t tuple_attr_num);
 
-void proj_op_destroy(operator_t *operator);
-
 /*
  * Union operator gets tuples from both supplied relations with the same attributes.
  * */
 
 operator_t *union_op_create(operator_t *left_source,
                             operator_t *right_source);
-
-void union_op_destroy(operator_t *operator);
 
 /*
  * Join operator does a cross join of two relations, i.e. it returns all possible combinations of
@@ -121,8 +115,6 @@ void union_op_destroy(operator_t *operator);
 
 operator_t *join_op_create(operator_t *left_source,
                            operator_t *right_source);
-
-void join_op_destroy(operator_t *operator);
 
 
 /*
@@ -147,8 +139,6 @@ void select_op_add_attr_attr_predicate(operator_t *operator,
 
 operator_t *select_op_create(operator_t *source);
 
-void select_op_destroy(operator_t *operator);
-
 /*
  * Sort operator sorts tuples by a given attribute in ascending or descending order
  *  */
@@ -156,7 +146,5 @@ void select_op_destroy(operator_t *operator);
 operator_t *sort_op_create(operator_t *source,
                            const attr_name_t sort_attr_name,
                            const sort_order_t order);
-
-void sort_op_destroy(operator_t *operator);
 
 #endif //PIGLETQL_EVAL_H

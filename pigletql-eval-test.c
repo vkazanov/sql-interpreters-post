@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
             scan_op->close(scan_op->state);
             assert(tuples_received == 4);
 
-            scan_op_destroy(scan_op);
+            scan_op->destroy(scan_op);
         }
 
         /* Check values received */
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 
             scan_op->close(scan_op->state);
 
-            scan_op_destroy(scan_op);
+            scan_op->destroy(scan_op);
 
         }
 
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
 
             scan_op_source->close(scan_op_source->state);
 
-            scan_op_destroy(scan_op_source);
+            scan_op_source->destroy(scan_op_source);
         }
 
         /* Check target tuples */
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 
             scan_op->close(scan_op->state);
 
-            scan_op_destroy(scan_op);
+            scan_op->destroy(scan_op);
         }
 
         relation_destroy(relation_target);
@@ -337,8 +337,7 @@ int main(int argc, char *argv[])
 
             proj_op->close(proj_op->state);
 
-            proj_op_destroy(proj_op);
-            /* scan_op_destroy(scan_op); */
+            proj_op->destroy(proj_op);
         }
 
         relation_destroy(relation);
@@ -424,9 +423,7 @@ int main(int argc, char *argv[])
 
             union_op->close(union_op->state);
 
-            scan_op_destroy(left_scan_op);
-            scan_op_destroy(right_scan_op);
-            union_op_destroy(union_op);
+            union_op->destroy(union_op);
         }
 
         relation_destroy(left_relation);
@@ -545,9 +542,7 @@ int main(int argc, char *argv[])
 
             join_op->close(join_op->state);
 
-            scan_op_destroy(left_scan_op);
-            scan_op_destroy(right_scan_op);
-            join_op_destroy(join_op);
+            join_op->destroy(join_op);
         }
 
         relation_destroy(left_relation);
@@ -602,8 +597,7 @@ int main(int argc, char *argv[])
 
             select_op->close(select_op->state);
 
-            select_op_destroy(select_op);
-            scan_op_destroy(scan_op);
+            select_op->destroy(select_op);
         }
 
         {
@@ -628,8 +622,7 @@ int main(int argc, char *argv[])
 
             select_op->close(select_op->state);
 
-            select_op_destroy(select_op);
-            scan_op_destroy(scan_op);
+            select_op->destroy(select_op);
         }
 
         relation_destroy(relation);
@@ -681,8 +674,7 @@ int main(int argc, char *argv[])
 
             select_op->close(select_op->state);
 
-            select_op_destroy(select_op);
-            scan_op_destroy(scan_op);
+            select_op->destroy(select_op);
         }
 
         relation_destroy(relation);
@@ -739,8 +731,7 @@ int main(int argc, char *argv[])
 
             sort_op->close(sort_op->state);
 
-            sort_op_destroy(sort_op);
-            scan_op_destroy(scan_op);
+            sort_op->destroy(sort_op);
         }
 
         /* Descending order */
@@ -777,8 +768,7 @@ int main(int argc, char *argv[])
 
             sort_op->close(sort_op->state);
 
-            sort_op_destroy(sort_op);
-            scan_op_destroy(scan_op);
+            sort_op->destroy(sort_op);
         }
 
         relation_destroy(relation);

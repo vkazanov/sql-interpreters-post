@@ -220,7 +220,7 @@ bool eval_select(catalogue_t *cat, const query_select_t *query)
         root_op->close(root_op->state);
     }
 
-    /* TODO: destroy the tree */
+    root_op->destroy(root_op);
 
     return true;
 }

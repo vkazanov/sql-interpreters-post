@@ -999,7 +999,6 @@ void sort_op_destroy(operator_t *operator)
 {
     if (!operator)
         return;
-    sort_op_state_t *state = operator->state;
     free(operator->state);
     free(operator);
 }

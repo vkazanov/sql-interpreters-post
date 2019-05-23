@@ -68,6 +68,8 @@ void relation_destroy(relation_t *relation);
  * next - retrieves the next tuple, ending with a NULL value
  *
  * close - closes the operator and resets its state
+ *
+ * destroy - deallocates all the memory required by an operator and it's child operators
  * */
 
 typedef struct operator_t operator_t;

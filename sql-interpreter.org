@@ -1,0 +1,58 @@
+* TODO Аннотация
+* TODO Исторический обзор: реляционная алгебра и SQL
+
+  - the original paper and ideas
+
+  - SEQUEL -> SQL as simplified relational algebra
+
+  - System R as the first (relational) db with an SQL query language
+
+* TODO Традиционные реляционные БД
+
+  - Hardware IO bottleneck and buffer management
+
+  - PostgreSQL
+
+  - MySQL
+
+* TODO Модель Volcano на итераторах
+
+  - the canonical paper
+
+  - the iterator cascade idea
+
+* TODO Интерпретатор-пример
+
+  - relations, relation attributes and tuples
+
+  - scan op
+
+  - project op
+
+  - select op
+
+  - join op
+
+  - sort op
+
+  - compiling select queries
+
+* TODO Новые аппаратные возможности и архитектура реляционных БД
+
+  - RAM can be huge now so buffer management is not always needed
+
+  - anti-caching proposal and examples
+
+  - non-volatile storage, i.e. hard disks, SSDs a newer types of memory
+
+* TODO Альтернативные подходы к интерпретации запросов
+
+  - push-based model
+
+  - vectorized query execution
+
+* TODO Динамическая компиляция запросов
+
+  - MemSQL and compiling: C++ -> .so -> execute
+
+  - PostgreSQL jit query compilation

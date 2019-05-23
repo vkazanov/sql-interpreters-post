@@ -39,16 +39,28 @@
 * TODO The Article
 * TODO Bibliography
 
+  - paper on the history of SQL
+
   - book with a Java-based example
 
   - the std implementation book
+
+  - System R paper
+
+  - PostgreSQL links and comments on older versions
+
+  - paper introducing relational algebra
+
+  - anti-caching paper
 
   - paper on traditional query evaluation
 
   - paper on volcano-style processing
 
-  - paper introducing relational algebra
+  - PostgreSQL jit compilation
 
-  - paper on the history of SQL
+  - push-based interpreter model
 
-  - PostgreSQL links and comments on older versions
+  - vectorwise paper
+
+  - compiling queries papers

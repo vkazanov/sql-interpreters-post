@@ -1,4 +1,18 @@
 * TODO Аннотация
+
+  Реляционные базы данных - современный де факто стандарт хранения, обработки и доступа к данным.
+  Масштаб таких БД простирается от небольших встроенных в процесс приложения библиотек (TODO:
+  SQLite) до распределенных систем в сотни машин (TODO: Hive).
+
+  Внутреннее устройство конкретных баз данных может сильно различаться в зависимости от множества
+  факторов: объема данных, требуемой производительностью в видах запросов, некоторых ключевых
+  архитектурных решений. Объединяет же эти базы данных только модель хранимых данных - реляционная
+  алгебра - и пользовательский интерфейс - язык SQL.
+
+  Данная статья рассматривает основы реляционной алгебры, ее связи с языком SQL, и описывает
+  реализацию интерпретатора узкого подмножества SQL. На базе примера интерпретатора-примера
+  объясняются более современные подходы к компиляции и интерпретации SQL.
+
 * TODO Исторический обзор: реляционная алгебра и SQL
 
   - the original paper and ideas
@@ -15,7 +29,10 @@
 
   - MySQL
 
+* TODO Реляционная алгебра на пальцах
 * TODO Модель Volcano на итераторах
+
+  - cheap CPU and expensive IO leads
 
   - the canonical paper
 
@@ -56,3 +73,32 @@
   - MemSQL and compiling: C++ -> .so -> execute
 
   - PostgreSQL jit query compilation
+* TODO Библиография
+
+  - paper on the history of SQL
+
+  - book with a Java-based example
+
+  - the std implementation book
+
+  - System R paper
+
+  - PostgreSQL links and comments on older versions
+
+  - paper introducing relational algebra
+
+  - anti-caching paper
+
+  - paper on traditional query evaluation
+
+  - paper on volcano-style processing
+
+  - PostgreSQL jit compilation
+
+  - SQLite
+
+  - push-based interpreter model
+
+  - vectorwise paper
+
+  - compiling queries papers

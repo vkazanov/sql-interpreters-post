@@ -36,4 +36,9 @@
 ** DONE attr name type not used?
 ** DONE destroy the op tree
 ** DONE Code comments
-* TODO The Article
+* TODO [0/4] The Article
+** TODO basic text
+** TODO links
+** TODO mark new terminology with italics
+** TODO illustrations
+** TODO proper biblio

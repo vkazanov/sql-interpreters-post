@@ -153,21 +153,243 @@
   В сущности, в терминах современных языков высокого уровня дерево таких операторов представляет
   собой каскад интераторов.
 
-* TODO Интерпретатор-пример
+* TODO PigletQL
 
-  - relations, relation attributes and tuples
+  От модели Volcano отталкиваются даже более развитые интерпретаторы и компиляторы запросов в
+  реляционных СУБД, поэтому в качестве иллюстрации к статье я разработал небольшой интерпретатор
+  языка запросов, напоминающего SQL - PigletQL.
 
-  - scan op
+  Язык этот поддерживает создание таблиц в стиле SQL, но ограничивается единственным типом -
+  32-битными положительными целыми числами. Все таблицы располагаются в памяти. Система работает в
+  один поток и не предлагает механизма транзакций.
 
-  - project op
+  В PigletQL нет оптимизатора, и запросы select компилируются прямо в дерево операторов.
 
-  - select op
+  К таблицам можно выполнять запросы, соответствующие простейшим операторам физической алгебры: scan,
+  project, select, join, sort.
 
-  - join op
+  Пример сессии PigletQL:
 
-  - sort op
+  #+BEGIN_EXAMPLE
+  > ./pigletql
+  > CREATE TABLE tab1 (col1,col2,col3);
+  > INSERT INTO tab1 VALUES (1,2,3);
+  > INSERT INTO tab1 VALUES (4,5,6);
+  > SELECT col1,col2,col3 FROM tab1;
+  col1 col2 col3
+  1 2 3
+  4 5 6
+  rows: 2
+  > SELECT col1 FROM tab1 ORDER BY col1 DESC;
+  col1
+  4
+  1
+  rows: 2
+  #+END_EXAMPLE
+
+*** Отношения и кортежи
+
+    Простейшие сущности в PigletQL: отношения (англ. relations) и кортежи (англ. tuples).
+
+    Отношения это плоские таблицы, создаваемые с заданным количеством атрибутов (функция relation_create) или с
+    атрибутами, позаимствованными у кортежа (функция relation_create_for_tuple):
+
+    #+BEGIN_SRC c
+
+      /* see pigletql-eval.h */
+      typedef struct relation_t relation_t;
+
+      relation_t *relation_create(const attr_name_t *attr_names, const uint16_t attr_num);
+
+      relation_t *relation_create_for_tuple(const tuple_t *tuple);
+
+      /* see pigletql-eval.c */
+      struct relation_t {
+          attr_name_t attr_names[MAX_ATTR_NUM];
+          uint16_t attr_num;
+
+          value_type_t *tuples;
+          uint32_t tuple_num;
+          uint32_t tuple_slots;
+      };
+
+    #+END_SRC
+
+    Кортежи устроены несколько сложнее, напрямую их создать нельзя, а можно только получить из
+    оператора, перебирающего кортежи либо отношения-источника, либо вложенного оператора:
+
+    #+BEGIN_SRC c
+      /* see pigletql-eval.h */
+      typedef struct tuple_t tuple_t;
+
+      /* see pigletql-eval.c */
+
+      typedef enum tuple_tag {
+          TUPLE_SOURCE,
+          TUPLE_PROJECT,
+          TUPLE_JOIN
+      } tuple_tag;
+
+      /* A unified tuple type passed between operators */
+      struct tuple_t {
+          tuple_tag tag;
+          union {
+              tuple_source_t source;
+              tuple_project_t project;
+              tuple_join_t join;
+          } as;
+      };
+
+      /* Source tuple is a reference to raw data in the relations */
+      typedef struct tuple_source_t {
+          /* A reference to a relation containing the tuple */
+          const relation_t *relation;
+          /* A reference to the values in the relation containing the tuple */
+          uint32_t tuple_i;
+      } tuple_source_t;
+
+      /* A projected tuple is a reference to another tuple giving access to a subset of referenced tuple
+       * attributes only */
+      typedef struct tuple_project_t {
+          /* a reference to tuple to project attributes from  */
+          tuple_t *source_tuple;
+          /* projected attributes */
+          attr_name_t attr_names[MAX_ATTR_NUM];
+          uint16_t attr_num;
+      } tuple_project_t;
+
+      /* A joined tuple is a tuple containing attributes from 2 source tuples  */
+      typedef struct tuple_join_t {
+          /* Contained tuples to join attributes from */
+          tuple_t *left_source_tuple;
+          tuple_t *right_source_tuple;
+      } tuple_join_t;
+
+    #+END_SRC
+
+    Кортежи в PigletQL бывают трех видов: ссылающиеся на данные в отношении (tuple_source_t),
+    ограничивающие список доступных атрибутов (tuple_project_t) и соединяющие атрибуты из двух
+    вложенных кортежей (tuple_join_t). Функции, обращающиеся к значениями атрибутов, работают
+    по-разному для каждого из видов кортежей в зависимости от тэга кортежа.
+
+    Вот, например, функция, получающее значение атрибута в кортеже:
+
+    #+BEGIN_SRC c
+    /* see pigletql-eval.h */
+
+    value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_name);
+
+    /* see pigletql-eval.c */
+
+    value_type_t tuple_get_attr_value(const tuple_t *tuple, const attr_name_t attr_name)
+    {
+        if (tuple->tag == TUPLE_SOURCE)
+            return tuple_source_get_attr_value(&tuple->as.source, attr_name);
+        else if (tuple->tag == TUPLE_PROJECT)
+            return tuple_project_get_attr_value(&tuple->as.project, attr_name);
+        else if (tuple->tag == TUPLE_JOIN)
+            return tuple_join_get_attr_value(&tuple->as.join, attr_name);
+        else
+            assert(false);
+    }
+
+    static value_type_t tuple_source_get_attr_value(const tuple_source_t *source, const attr_name_t attr_name)
+    {
+        const relation_t *relation = source->relation;
+        uint16_t attr_i = relation_attr_i_by_name(relation, attr_name);
+        return relation_tuple_values_by_id(relation, source->tuple_i)[attr_i];
+    }
+
+    static value_type_t tuple_project_get_attr_value(const tuple_project_t *project, const attr_name_t attr_name)
+    {
+        for (size_t attr_i = 0; attr_i < project->attr_num; attr_i++ )
+            if (strcmp(project->attr_names[attr_i], attr_name) == 0)
+                return tuple_get_attr_value(project->source_tuple, attr_name);
+        assert(false);
+    }
+
+    static value_type_t tuple_join_get_attr_value(const tuple_join_t *join, const attr_name_t attr_name)
+    {
+        if (tuple_has_attr(join->left_source_tuple, attr_name))
+            return tuple_get_attr_value(join->left_source_tuple, attr_name);
+        else if (tuple_has_attr(join->right_source_tuple, attr_name))
+            return tuple_get_attr_value(join->right_source_tuple, attr_name);
+        else
+            assert(false);
+    }
+
+    #+END_SRC
+
+*** DONE Операторы
+
+    Для выполнения запросов PigletQL использует систему, похожую на Volcano. Оператор это три
+    основных функции (op_open, op_next, op_close) и состояние (state):
+
+    #+BEGIN_SRC c
+      /* see pigletql-eval.h */
+
+      /*
+       * Operators iterate over relation tuples or tuples returned from other operators using 3 standard
+       * ops: open, next, close.
+       */
+      typedef struct operator_t operator_t;
+
+      typedef void (*op_open)(void *state);
+      typedef tuple_t *(*op_next)(void *state);
+      typedef void (*op_close)(void *state);
+      typedef void (*op_destroy)(operator_t *state);
+
+      /* The operator itself is just 4 pointers to related ops and operator state */
+      struct operator_t {
+          op_open open;
+          op_next next;
+          op_close close;
+          op_destroy destroy;
+
+          void *state;
+      } ;
+
+      /* see pigletql-eval.с */
+    #+END_SRC
+
+    Дополнительная функция op_destroy освобождает ресурсы всего дерева операторов целиком. Состояние
+    в state - произвольные данные, которые аллоцируются и деаллоциются в функциях op_open/op_close.
+
+    Пример использования простейшего из операторов (scan_op):
+
+    #+BEGIN_SRC c
+      /* see pigletql-eval-test.c */
+
+      /* ...relation created... */
+
+      operator_t *scan_op = scan_op_create(relation);
+
+      scan_op->open(scan_op->state);
+
+      size_t tuples_received = 0;
+      tuple_t *tuple = NULL;
+      while((tuple = scan_op->next(scan_op->state)))
+          tuples_received++;
+
+      scan_op->close(scan_op->state);
+
+      scan_op->destroy(scan_op);
+
+    #+END_SRC
+
+    Здесь оператор scan просто извлекает все кортежи из отношения одно за другим, в конце возвращая
+    NULL. Интерфейс извлечения кортежей един для всех операторов, отличается только функция создания
+    конкретного оператора.
+
+*** TODO Компиляция запросов в дерево операторов
+
+  - operator system
+
+  - op examples: scan op, project op, select op, join op, sort op
 
   - compiling select queries
+
+  - running other requests (create/insert)
 
 * TODO Новые аппаратные возможности и архитектура реляционных БД
 

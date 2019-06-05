@@ -38,7 +38,8 @@
 ** DONE Code comments
 * TODO [0/4] The Article
 ** TODO basic text
-** TODO links
+** TODO proper biblio
+** TODO links to papers
+** TODO links to the repo
 ** TODO mark new terminology with italics
 ** TODO illustrations
-** TODO proper biblio

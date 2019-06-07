@@ -88,6 +88,7 @@ void dump(const query_t *query)
 
 operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
 {
+    /* Current root operator */
     operator_t *root_op = NULL;
 
     /* 1. Scan ops */
@@ -273,7 +274,7 @@ void run(catalogue_t *cat, const char *query_str)
     query_t *query = query_create();
 
     if (parser_parse(parser, scanner, query)) {
-        dump(query);
+        /* dump(query); */
         if (validate(cat, query))
             eval(cat, query);
     }

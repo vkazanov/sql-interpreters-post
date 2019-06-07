@@ -60,15 +60,19 @@ typedef enum query_tag {
 } query_tag;
 
 typedef struct query_select_t {
+    /* Attributes to output */
     attr_name_t attr_names[MAX_ATTR_NUM];
     uint16_t attr_num;
 
+    /* Relations to get tuples from */
     rel_name_t rel_names[MAX_REL_NUM];
     uint16_t rel_num;
 
+    /* Predicates to apply to tuples */
     query_predicate_t predicates[MAX_PRED_NUM];
     uint16_t pred_num;
 
+    /* Pick an attribute to sort by */
     bool has_order;
     attr_name_t order_by_attr;
     sort_order_t order_type;

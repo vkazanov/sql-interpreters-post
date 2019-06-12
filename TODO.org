@@ -36,10 +36,10 @@
 ** DONE attr name type not used?
 ** DONE destroy the op tree
 ** DONE Code comments
-* TODO [0/4] The Article
-** TODO basic text
-** TODO proper biblio
-** TODO links to papers
+* TODO [3/6] The Article
+** DONE basic text
+** DONE links to papers
 ** TODO links to the repo
-** TODO mark new terminology with italics
+** TODO proper biblio
 ** TODO illustrations
+** DONE mark new terminology with italics

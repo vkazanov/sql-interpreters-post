@@ -37,14 +37,14 @@ typedef enum token_type {
     TOKEN_INTO,
     TOKEN_VALUES,
 
-    TOKEN_ERROR,
-    TOKEN_EOS
+    TOKEN_ERROR,                /* failed to scan */
+    TOKEN_EOS                   /* end of stream */
 } token_type;
 
 typedef struct token_t {
-    token_type type;
-    const char *start;
-    int length;
+    token_type type;            /* token type tag */
+    const char *start;          /* start of the token */
+    int length;                 /* length of the token string */
 } token_t;
 
 typedef struct query_predicate_t {

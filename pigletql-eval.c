@@ -407,10 +407,9 @@ tuple_t *scan_op_next(void *state)
     scan_op_state_t *op_state = (typeof(op_state)) state;
     if (op_state->next_tuple_i >= op_state->relation->tuple_num)
         return NULL;
-    uint32_t current_i = op_state->next_tuple_i;
-    tuple_source_t *source_tuple = &op_state->current_tuple.as.source;
-    source_tuple->tuple_i = current_i;
 
+    tuple_source_t *source_tuple = &op_state->current_tuple.as.source;
+    source_tuple->tuple_i = op_state->next_tuple_i;
     op_state->next_tuple_i++;
 
     return &op_state->current_tuple;
@@ -435,31 +434,29 @@ void scan_op_destroy(operator_t *operator)
 operator_t *scan_op_create(const relation_t *relation)
 {
     operator_t *op = calloc(1, sizeof(*op));
-    if (!op)
-        goto op_fail;
+    assert(op);
+
+    *op = (operator_t) {
+        .open = scan_op_open,
+        .next = scan_op_next,
+        .close = scan_op_close,
+        .destroy = scan_op_destroy,
+    };
 
     scan_op_state_t *state = calloc(1, sizeof(*state));
-    if (!state)
-        goto state_fail;
+    assert(state);
 
-    state->relation = relation;
-    state->next_tuple_i = 0;
-    state->current_tuple.tag = TUPLE_SOURCE;
-    state->current_tuple.as.source.tuple_i = 0;
-    state->current_tuple.as.source.relation = relation;
+    *state = (scan_op_state_t) {
+        .relation = relation,
+        .next_tuple_i = 0,
+        .current_tuple.tag = TUPLE_SOURCE,
+        .current_tuple.as.source.tuple_i = 0,
+        .current_tuple.as.source.relation = relation,
+    };
     op->state = state;
 
-    op->open = scan_op_open;
-    op->next = scan_op_next;
-    op->close = scan_op_close;
-    op->destroy = scan_op_destroy;
 
     return op;
-
-state_fail:
-        free(op);
-op_fail:
-    return NULL;
 }
 
 /* Projection operator */

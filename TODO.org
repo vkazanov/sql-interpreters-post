@@ -69,6 +69,8 @@
    осталась в коде*, о ней пока в тексте нет, при этом надо читателя более плавно подвести к своему
    уровню :)
 
+** TODO translate all the comments, mention C
 ** TODO links to the repo
 ** TODO proper biblio
 ** TODO illustrations
+** TODO repo comments

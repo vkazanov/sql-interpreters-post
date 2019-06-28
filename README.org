@@ -1,0 +1,99 @@
+* PigletQL - a tiny SQL-like interpreter
+
+  PigletQL is a tiny SQL-like language featuring a single value type, three kinds of queries (CREATE
+  TABLE, INSERT, SELECT) and a Volcano-style (see the "Volcano - an extensible and parallel query
+  evaluation system" paper) interpreter. It does not do any optimization and keeps all data in
+  memory.
+
+  It was created as an example language for an article ([[file:sql-interpreter-v2.org][in Russian]]) on SQL interpreter
+  architecture.
+
+* Building
+
+  It should be trivial to compile the interpreter on Linux using a recent GCC. Just clone the repo
+  and do:
+
+  #+BEGIN_EXAMPLE
+
+  > make
+  > make test
+  > ./pigletql
+  > # your query here
+
+  #+END_EXAMPLE
+
+* Example queries
+
+   #+BEGIN_EXAMPLE
+
+   > ./pigletql
+   > create table rel1 (a1,a2,a3);
+   > insert into rel1 values (1,2,3);
+   > insert into rel1 values (4,5,6);
+   > select a1 from rel1;
+   a1
+   1
+   4
+   rows: 2
+   >
+
+   #+END_EXAMPLE
+
+   #+BEGIN_EXAMPLE
+
+   > ./pigletql
+   > create table rel1 (a1,a2,a3);
+   > insert into rel1 values (1,2,3);
+   > insert into rel1 values (4,5,6);
+   > select a1 from rel1 where a1 > 3;
+   a1
+   4
+   rows: 1
+   >
+
+   #+END_EXAMPLE
+
+   #+BEGIN_EXAMPLE
+
+   > ./pigletql
+   > create table rel1 (a1,a2,a3);
+   > insert into rel1 values (1,2,3);
+   > insert into rel1 values (4,5,6);
+   > select a1 from rel1 order by a1 desc;
+   a1
+   4
+   1
+   rows: 2
+
+   #+END_EXAMPLE
+
+   #+BEGIN_EXAMPLE
+
+   > ./pigletql
+   > create table rel1 (a1,a2,a3);
+   > insert into rel1 values (1,2,3);
+   > insert into rel1 values (4,5,6);
+   > create table rel2 (a4,a5,a6);
+   > insert into rel2 values (7,8,6);
+   > insert into rel2 values (9,10,6);
+   > select a1,a2,a3,a4,a5,a6 from rel1, rel2 where a3=a6;
+   a1 a2 a3 a4 a5 a6
+   4 5 6 7 8 6
+   4 5 6 9 10 6
+   rows: 2
+
+   #+END_EXAMPLE
+
+* Code structure
+
+  - [[file:pigletql-eval.h][pigletql-eval.h]] - evaluation engine, i.e. Volcano-style operators, relations, tuples, etc
+
+  - [[file:pigletql-parser.h][pigletql-parser.h]] - lexer/parser
+
+  - [[file:pigletql-validate.h][pigletql-validate.h]] - query validation logic
+
+  - [[file:pigletql-catalogue.h][pigletql-catalogue.h]] - a catalogue of relations available
+
+  - [[file:pigletql-def.h][pigletql-def.h]] - constants and helpers
+
+  - [[file:pigletql.c][pigletql.c]] - putting everything together

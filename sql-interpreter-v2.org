@@ -28,11 +28,11 @@
 
   Языки запросов выходили недостаточно гибкими, хотя очевидных причин для ограничения возможностей
   языков не было. Со временем мы обратились к опыту разработчиков интерпретаторов SQL, благодаря
-  чему смогли решить возникшие проблемы.
+  чему смогли частично решить возникшие проблемы.
 
-  В статье я покажу, как можно разработать интерпретатор для примитивного диалекта SQL - [[https://github.com/vkazanov/sql-interpreters-post][PigletQL]] -
-  и постараюсь провести параллели с компиляторами/интерпретаторами для языков программирования
-  общего назначения.
+  Я расскажу про самую распространенную модель исполнения запросов в реляционных БД - модель
+  Volcano. К статье прилагается исходный код интерпретатора примитивного диалекта SQL - [[https://github.com/vkazanov/sql-interpreters-post][PigletQL]],
+  поэтому интересующиеся легко могут ознакомиться с деталями.
 
 * Содержание                                                           :TOC:
 - [[#введение][Введение]]
@@ -53,14 +53,14 @@
   [[file:img/General%20SQL%20Intepreter%20Structure.svg]]
 
   Большая часть популярных баз данных предоставляет интерфейс к данным в виде декларативного языка
-  запросов SQL. Первые интерпретаторы SQL исполняли запросы непосредственно из дерева разбора. Но
-  практически сразу разработчики переключились на использование древовидных промежуточных
-  представлений, сделав это по двум причинам: надо было справляться с растущей сложностью стандарта
-  языка и упростить работу оптимизирующей подсистемы.
+  запросов SQL. Запрос в виде строки преобразуется синтаксическим анализатором в описание запроса,
+  похожее на дерево абстрактного синтаксиса. Несложные запросы возможно выполнять уже на этом этапе,
+  однако для оптимизирующих преобразований и последующего исполнения это представление неудобно. В
+  известных мне БД для этих целей вводятся промежуточные представления.
 
-  Образцом для промежуточных представлений стала реляционная алгебра. Реляционная алгебра - язык,
-  где явно описываются преобразования (/операторы/), проводимые над данными: выбор подмножества данных
-  по предикату, соединение данных из разных источников и так далее. Кроме того, реляционная
+  Основным образцом для промежуточных представлений стала реляционная алгебра. Реляционная алгебра -
+  язык, где явно описываются преобразования (/операторы/), проводимые над данными: выбор подмножества
+  данных по предикату, соединение данных из разных источников и так далее. Кроме того, реляционная
   алгебра - алгебра в математическом смысле, то есть для нее формализовано большое число
   эквивалентных преобразований. Над запросом в форме дерева операторов реляционной алгебры удобно
   проводить оптимизирующие преобразования.
@@ -68,43 +68,48 @@
   Существуют важные отличия между внутренними представлениями в базах данных и оригинальной
   реляционной алгеброй, поэтому правильней ее называть /логической алгеброй/.
 
-  Проверка валидности запроса обычно проводится при компиляции дерева разбора в операторы логической
-  алгебры и соответствует стадии семантического анализа в обычных компиляторах. Роль таблицы
-  символов в базах данных играет /каталог базы данных/, где хранится информация о /схеме/ и метаданных
-  базы данных: таблицах, колонках таблиц, правах пользователей и т.д.
+  Проверка валидности запроса обычно проводится при компиляции первоначального представления запроса
+  в операторы логической алгебры и соответствует стадии семантического анализа в обычных
+  компиляторах. Роль таблицы символов в базах данных играет /каталог базы данных/, где хранится
+  информация о /схеме/ и метаданных базы данных: таблицах, колонках таблиц, правах пользователей и
+  т.д.
 
   По сравнению с интерпретаторами языков общего назначения у интерпретаторов баз данных есть еще
-  одна особенность: сильные различия в структуре данных, к которым предполагается делать запросы.
-  Таблицы (/отношения/ в терминах реляционной алгебры и документации некоторых БД) с данными бывают
-  разных размеров, на некоторых колонках (/атрибутах/ отношений) могут быть индексы и т.д. То есть в
-  зависимости от /схемы/ и данных в БД запрос надо исполнять разными алгоритмами и разном порядке.
+  одна особенность: различия в объеме данных и метаинформации о данных, к которым предполагается
+  делать запросы. В таблицах (/отношениях/ в терминах реляционной алгебры и документации некоторых БД)
+  может быть разное количество даннымх, на некоторых колонках (/атрибутах/ отношений) могут быть
+  построены индексы и т.д. То есть в зависимости от /схемы/ и данных в БД запрос надо исполнять
+  разными алгоритмами и разном порядке.
 
-  Для решения этой задачи было введено еще одно промежуточное представление - /физическая алгебра/. В
-  зависимости от наличия индексов на колонках, объема данных в отдельных таблицах и структуры дерева
+  Для решения этой задачи вводится еще одно промежуточное представление - /физическая алгебра/. В
+  зависимости от наличия индексов на колонках, объема данных в таблицах и структуры дерева
   логической алгебры предлагаются разные формы дерева физической алгебры, из которых выбирается
-  оптимальный вариант. Такое дерево показывают БД в качестве плана запроса. В обычных компиляторах
-  этому этапу соответствует этап выбора инструкций.
+  оптимальный вариант. Именно это дерево показывают БД в качестве плана запроса. В обычных
+  компиляторах этому этапу условно соответствуют этапы распределения регистров, планирования и
+  выбора инструкций.
 
   Последним этапом работы интерпретатора является непосредственно исполнение дерева операторов
   физической алгебры.
 
 * Модель Volcano и исполнение запросов
 
-  [[file:img/Volcano%20Model.svg]]
-
   Интерпретаторы дерева физической алгебры в закрытых коммерческих БД использовались практически
-  всегда, но ключевая публикация на эту тему связана с экспериментальным оптимизатором Volcano,
-  разрабатывавшемся в начале 90-х.
+  всегда, но академическая литература на эту тему обычно ссылается на экспериментальный оптимизатор
+  Volcano, разрабатывавшийся в начале 90-х.
 
   В модели Volcano операторы дерева физической алгебры каждый превращается в структуру с тремя
   функциями: open, next, close. Кроме функций оператор содержит рабочее состояние - state. Функция
   open инициирует состояние оператора, next возвращает либо следующий /кортеж/ (англ. tuple), либо
-  NULL если кортежей не осталось. Функция close заканчивает работу оператора.
+  NULL если кортежей не осталось. Функция close заканчивает работу оператора:
+
+  [[file:img/Volcano%20Operator.svg]]
 
   Операторы могут быть вложены друг в друга, чтобы сформировать дерево операторов физической
   алгебры. Каждый оператор, таким образом, перебирает кортежи либо существующего на реальном
   носителе отношения, либо виртуального отношения, формируемого перебором кортежей вложенных
-  операторов.
+  операторов:
+
+  [[file:img/Volcano%20Model.svg]]
 
   В терминах современных языков высокого уровня дерево таких операторов представляет собой каскад
   итераторов.
@@ -116,14 +121,11 @@
 
   [[file:img/PigletQL%20Structure.svg]]
 
-  PigletQL поддерживает создание таблиц в стиле SQL, но ограничивается единственным типом -
-  32-битными положительными целыми числами. Все таблицы располагаются в памяти. Система работает в
-  один поток, не предлагает механизма транзакций. В PigletQL нет оптимизатора, и запросы SELECT
-  компилируются прямо в дерево операторов физической алгебры. Остальные запросы (CREATE TABLE и
-  INSERT) работают непосредственно из дерева разбора запроса.
-
-  Интерпретатор поддерживает запросы SELECT, соответствующие простейшим операторам физической
-  алгебры: scan, project, select, join, sort.
+  PigletQL написан на языке Си, поддерживает создание таблиц в стиле SQL, но ограничивается
+  единственным типом - 32-битными положительными целыми числами. Все таблицы располагаются в памяти.
+  Система работает в один поток, не предлагает механизма транзакций. В PigletQL нет оптимизатора, и
+  запросы SELECT компилируются прямо в дерево операторов физической алгебры, остальные же запросы
+  (CREATE TABLE и INSERT) исполняются сразу после разбора строки запроса.
 
   Пример сессии пользователя в PigletQL:
 
@@ -155,53 +157,11 @@
 
    #+BEGIN_SRC c
 
-   typedef struct scanner_t scanner_t;
-
    scanner_t *scanner_create(const char *string);
 
    void scanner_destroy(scanner_t *scanner);
 
    token_t scanner_next(scanner_t *scanner);
-
-   #+END_SRC
-
-   Сами токены:
-
-   #+BEGIN_SRC c
-
-   typedef enum token_type {
-       TOKEN_IDENT,
-       TOKEN_NUMBER,
-       TOKEN_STAR,
-       TOKEN_COMMA,
-       TOKEN_SEMICOLON,
-       TOKEN_LPAREN,
-       TOKEN_RPAREN,
-       TOKEN_EQUAL,
-       TOKEN_LESS,
-       TOKEN_GREATER,
-       TOKEN_SELECT,
-       TOKEN_CREATE,
-       TOKEN_TABLE,
-       TOKEN_INSERT,
-       TOKEN_FROM,
-       TOKEN_WHERE,
-       TOKEN_AND,
-       TOKEN_ORDER,
-       TOKEN_BY,
-       TOKEN_ASC,
-       TOKEN_DESC,
-       TOKEN_INTO,
-       TOKEN_VALUES,
-       TOKEN_ERROR,                /* failed to scan */
-       TOKEN_EOS                   /* end of stream */
-   } token_type;
-
-   typedef struct token_t {
-       token_type type;            /* token type tag */
-       const char *start;          /* start of the token string */
-       int length;                 /* length of the token string */
-   } token_t;
 
    #+END_SRC
 
@@ -285,91 +245,41 @@
    колонками, используется /каталог/ базы данных, где хранится вся информация о структуре данных БД.
 
    В PigletQL сложных выражений не бывает, поэтому проверка запроса сводится к проверке метаданных
-   таблиц и колонок по каталогу.
+   таблиц и колонок по каталогу. Запросы SELECT, например, проверяются функцией validate_select.
+   Приведу функцию в сокращенном виде:
 
    #+BEGIN_SRC c
 
-   static bool validate_select(catalogue_t *cat, const query_select_t *query)
-   {
-       /* All the relations should exist */
-       for (size_t rel_i = 0; rel_i < query->rel_num; rel_i++) {
-           if (catalogue_get_relation(cat, query->rel_names[rel_i]))
-               continue;
+     static bool validate_select(catalogue_t *cat, const query_select_t *query)
+     {
+         /* All the relations should exist */
+         for (size_t rel_i = 0; rel_i < query->rel_num; rel_i++) {
+             if (catalogue_get_relation(cat, query->rel_names[rel_i]))
+                 continue;
 
-           fprintf(stderr, "Error: relation '%s' does not exist\n", query->rel_names[rel_i]);
-           return false;
-       }
+             fprintf(stderr, "Error: relation '%s' does not exist\n", query->rel_names[rel_i]);
+             return false;
+         }
 
-       /* Relation names should be unique */
-       if (!rel_names_unique(query->rel_names, query->rel_num))
-           return false;
+         /* Relation names should be unique */
+         if (!rel_names_unique(query->rel_names, query->rel_num))
+             return false;
 
-       /* Attribute names should be unique */
-       if (!attr_names_unique(query->attr_names, query->attr_num))
-           return false;
+         /* Attribute names should be unique */
+         if (!attr_names_unique(query->attr_names, query->attr_num))
+             return false;
 
-       /* Attributes should be present in relations listed */
-       for (size_t attr_i = 0; attr_i < query->attr_num; attr_i++) {
-           bool attr_found = false;
-           for (size_t rel_i = 0; rel_i < query->rel_num; rel_i++) {
-               relation_t *rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
-               if (!relation_has_attr(rel, query->attr_names[attr_i]))
-                   continue;
-               attr_found = true;
-               break;
-           }
-           if (attr_found)
-               continue;
+         /* Attributes should be present in relations listed */
+         /* ... */
 
-           const char *msg = "Error: unknown attribute name '%s'\n";
-           fprintf(stderr, msg, query->attr_names[attr_i]);
-           return false;
-       }
+         /* ORDER BY attribute should be available in the list of attributes chosen */
+         /* ... */
 
-       /* Order by attribute should be available in the list of attributes chosen */
-       if (query->has_order) {
-           if (!attr_in_attr_names(query->order_by_attr, query->attr_names, query->attr_num)) {
-               const char *msg = "Error: unknown order by attribute '%s'\n";
-               fprintf(stderr, msg, query->order_by_attr);
-               return false;
-           }
-       }
+         /* Predicate attributes should be available in the list of attributes projected */
+         /* ... */
 
-       /* Predicate attributes should be available in the list of attributes projected */
-       for (size_t pred_i = 0; pred_i < query->pred_num; pred_i++) {
-           const query_predicate_t *predicate = &query->predicates[pred_i];
-
-           /* Attribute on the left should always be there */
-           {
-               token_t token = predicate->left;
-               char attr_name_buf[512] = {0};
-               strncpy(attr_name_buf, token.start, (size_t)token.length);
-
-               if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
-                   const char *msg = "Error: unknown left-hand side attribute name '%s' in predicate %zu\n";
-                   fprintf(stderr, msg, attr_name_buf, pred_i);
-                   return false;
-               }
-           }
-
-           /* Attribute on the right? */
-           {
-               token_t token = predicate->right;
-               if (token.type == TOKEN_IDENT) {
-                   char attr_name_buf[512] = {0};
-                   strncpy(attr_name_buf, token.start, (size_t)token.length);
-
-                   if (!attr_in_attr_names(attr_name_buf, query->attr_names, query->attr_num)) {
-                       const char *msg = "Error: unknown right-hand side attribute name '%s' in predicate %zu\n";
-                       fprintf(stderr, msg, attr_name_buf, pred_i);
-                       return false;
-                   }
-               }
-           }
-       }
-
-       return true;
-   }
+         return true;
+     }
 
    #+END_SRC
 
@@ -396,7 +306,7 @@
    2. Извлекающие кортежи из отношений операторы scan объединяются в левостороннее двоичное дерево
       через оператор join.
 
-   3. Атрибуты, запрошенные пользователем ("SELECT attr1, attr2 ..."), выбираются еще один оператор
+   3. Атрибуты, запрошенные пользователем ("SELECT attr1, attr2 ..."), выбираются оператором
       project.
 
    4. Если указаны какие-либо предикаты ("... WHERE a=1 AND b>10 ..."), то к дереву сверху
@@ -409,86 +319,48 @@
 
    #+BEGIN_SRC c
 
-   operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
-   {
-       /* Current root operator */
-       operator_t *root_op = NULL;
+     operator_t *compile_select(catalogue_t *cat, const query_select_t *query)
+     {
+         /* Current root operator */
+         operator_t *root_op = NULL;
 
-       /* 1. Scan ops */
-       /* 2. Join ops*/
+         /* 1. Scan ops */
+         /* 2. Join ops*/
 
-       {
-           size_t rel_i = 0;
-           relation_t *rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
-           root_op = scan_op_create(rel);
-           rel_i += 1;
+         {
+             size_t rel_i = 0;
+             relation_t *rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
+             root_op = scan_op_create(rel);
+             rel_i += 1;
 
-           for (; rel_i < query->rel_num; rel_i++) {
-               rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
-               operator_t *scan_op = scan_op_create(rel);
-               root_op = join_op_create(root_op, scan_op);
-           }
-       }
+             for (; rel_i < query->rel_num; rel_i++) {
+                 rel = catalogue_get_relation(cat, query->rel_names[rel_i]);
+                 operator_t *scan_op = scan_op_create(rel);
+                 root_op = join_op_create(root_op, scan_op);
+             }
+         }
 
-       /* 3. Project */
-       root_op = proj_op_create(root_op, query->attr_names, query->attr_num);
+         /* 3. Project */
+         root_op = proj_op_create(root_op, query->attr_names, query->attr_num);
 
-       /* 4. Select */
-       if (query->pred_num > 0) {
-           operator_t *select_op = select_op_create(root_op);
-           for (size_t pred_i = 0; pred_i < query->pred_num; pred_i++) {
-               query_predicate_t predicate = query->predicates[pred_i];
+         /* 4. Select */
+         if (query->pred_num > 0) {
+             operator_t *select_op = select_op_create(root_op);
+             for (size_t pred_i = 0; pred_i < query->pred_num; pred_i++) {
+                 query_predicate_t predicate = query->predicates[pred_i];
 
-               /* On the left we always get an identifier */
-               assert(predicate.left.type == TOKEN_IDENT);
+                 /* Add a predicate to the select operator */
+                 /* ... */
+             }
+             root_op = select_op;
+         }
 
-               attr_name_t left_attr_name = {0};
-               strncpy(left_attr_name, predicate.left.start, (size_t)predicate.left.length);
+         /* 5. Sort */
+         if (query->has_order)
+             root_op = sort_op_create(root_op, query->order_by_attr, query->order_type);
 
-               select_predicate_op pred_op = 0;
-               switch (predicate.op.type) {
-               case TOKEN_GREATER:
-                   pred_op = SELECT_GT;
-                   break;
-               case TOKEN_LESS:
-                   pred_op = SELECT_LT;
-                   break;
-               case TOKEN_EQUAL:
-                   pred_op = SELECT_EQ;
-                   break;
-               default:
-                   /* Uknown predicate type */
-                   assert(false);
-               }
-
-               /* On the right it's either a constant or another identifier */
-               if (predicate.right.type == TOKEN_IDENT) {
-                   attr_name_t right_attr_name = {0};
-                   strncpy(right_attr_name, predicate.right.start, (size_t)predicate.right.length);
-
-                   select_op_add_attr_attr_predicate(select_op, left_attr_name, pred_op, right_attr_name);
-               } else if (predicate.right.type == TOKEN_NUMBER) {
-                   char buf[128] = {0};
-                   strncpy(buf, predicate.right.start, (size_t)predicate.right.length);
-
-                   value_type_t right_const = 0;
-                   sscanf(buf, "%" SCN_VALUE, &right_const);
-
-                   select_op_add_attr_const_predicate(select_op, left_attr_name, pred_op, right_const);
-               } else {
-                   /* Invalid token */
-                   assert(false);
-               }
-           }
-           root_op = select_op;
-       }
-
-       /* 5. Sort */
-       if (query->has_order)
-           root_op = sort_op_create(root_op, query->order_by_attr, query->order_type);
-
-       return root_op;
-   }
+         return root_op;
+     }
 
    #+END_SRC
 
@@ -500,9 +372,12 @@
    [[file:img/PigletQL%20Tuple%20Path.svg]]
 
    Модель исполнения Volcano подразумевает интерфейс работы с операторами через три общие для всех
-   операторов операции open/next/close. В сущности, каждый оператор Volcano - итератор. Каждый из
-   таких итераторов может сам вызвать те же функции вложенных итераторов, сформировать временные
-   таблицы или преобразовать входящие кортежи.
+   операторов операции open/next/close. В сущности, каждый оператор Volcano - итератор, из которого
+   кортежи "вытягиваются" один за другим, поэтому такой подход к исполнению еще называется
+   pull-моделью.
+
+   Каждый из таких итераторов может сам вызвать те же функции вложенных итераторов, сформировать
+   временные таблицы или преобразовать входящие кортежи.
 
    Исполнение запросов SELECT в PigletQL:
 
@@ -551,15 +426,12 @@
 
 ** Операторы
 
-   Самое интересное в PigletQL - дерево операторов, и хочется показать устройство хотя бы одного из
-   них.
+   Самое интересное в PigletQL - дерево операторов, и хочется показать устройство некоторых из них.
 
    Интерфейс у всех операторов общий и состоит из указателей на функции open/next/close и
    дополнительной служебная функция (destroy), высвобождающей ресурсы всего дерева операторов разом:
 
    #+BEGIN_SRC c
-
-   typedef struct operator_t operator_t;
 
    typedef void (*op_open)(void *state);
    typedef tuple_t *(*op_next)(void *state);
@@ -579,6 +451,11 @@
    #+END_SRC
 
    Помимо функций в операторе может содержаться произвольное внутреннее состояние (указатель state).
+
+   Ниже я разберу устройство двух интересных операторов: простейший scan и создающий промежуточное
+   отношение sort.
+
+*** Оператор scan
 
    Оператор, с которого начинается выполнение любого запроса - scan. Он просто перебирает все
    кортежи отношения. Внутреннее состояние у scan это указатель на отношение, откуда будут
@@ -673,6 +550,96 @@
    }
 
    #+END_SRC
+
+*** Оператор sort
+
+    Оператор sort выдает кортежи в заданном пользователем порядке. Для этого надо создать временную
+    таблицу с кортежами, полученными из вложенных операторов, и отсортировать.
+
+    Внутреннее состояние оператора:
+
+    #+BEGIN_SRC c
+
+    typedef struct sort_op_state_t {
+        operator_t *source;
+        /* Attribute to sort tuples by */
+        attr_name_t sort_attr_name;
+        /* Sort order, descending or ascending */
+        sort_order_t sort_order;
+
+        /* Temporary relation to be used for sorting*/
+        relation_t *tmp_relation;
+        /* Relation scan op */
+        operator_t *tmp_relation_scan_op;
+    } sort_op_state_t;
+
+    #+END_SRC
+
+    Сортировка проводится по указанным в запросе атрибутам (sort_attr_name и sort_order) над
+    временное отношеним (tmp_relation). Все это происходит во время вызова функции open:
+
+    #+BEGIN_SRC c
+
+    void sort_op_open(void *state)
+    {
+        sort_op_state_t *op_state = (typeof(op_state)) state;
+        operator_t *source = op_state->source;
+
+        /* Materialize a table to be sorted */
+        source->open(source->state);
+        tuple_t *tuple = NULL;
+        while((tuple = source->next(source->state))) {
+            if (!op_state->tmp_relation) {
+                op_state->tmp_relation = relation_create_for_tuple(tuple);
+                assert(op_state->tmp_relation);
+                op_state->tmp_relation_scan_op = scan_op_create(op_state->tmp_relation);
+            }
+            relation_append_tuple(op_state->tmp_relation, tuple);
+        }
+        source->close(source->state);
+
+        /* Sort it */
+        relation_order_by(op_state->tmp_relation, op_state->sort_attr_name, op_state->sort_order);
+
+        /* Open a scan op on it */
+        op_state->tmp_relation_scan_op->open(op_state->tmp_relation_scan_op->state);
+    }
+
+    #+END_SRC
+
+    Перебор элементов временного отношения проводится временным оператором tmp_relation_scan_op:
+
+    #+BEGIN_SRC c
+
+    tuple_t *sort_op_next(void *state)
+    {
+        sort_op_state_t *op_state = (typeof(op_state)) state;
+        return op_state->tmp_relation_scan_op->next(op_state->tmp_relation_scan_op->state);;
+    }
+
+    #+END_SRC
+
+    Временное отношение деаллоцируется в функции close:
+
+    #+BEGIN_SRC c
+
+    void sort_op_close(void *state)
+    {
+        sort_op_state_t *op_state = (typeof(op_state)) state;
+        /* If there was a tmp relation - destroy it */
+        if (op_state->tmp_relation) {
+            op_state->tmp_relation_scan_op->close(op_state->tmp_relation_scan_op->state);
+            scan_op_destroy(op_state->tmp_relation_scan_op);
+            relation_destroy(op_state->tmp_relation);
+            op_state->tmp_relation = NULL;
+        }
+    }
+
+    #+END_SRC
+
+    Отсюда хорошо видно, почему операции сортировки на колонках без индексов могут занимать довольно
+    много времени.
+
 ** Примеры работы
 
    Приведу несколько примеров запросов PigletQL с соответствующими деревьями физической алгебры.
@@ -768,25 +735,33 @@
 
 * Выводы
 
-  PigletQL имитирует работу интерпретатора именно SQL, но сама архитектура таких интерпретаторов
-  может пригодиться в тех случаях, где требуется гибко работать с потоками данных. Некоторые
-  операторы в древовидном промежуточных представления, к примеру, могут отвечать за полноценное
-  вычисление выражений на входных данных; вторые - сохранение промежуточных результатов; третьи -
-  объединять потоки данных.
+  Не могу не заметить, что если вы делаете интерпретатор языка, похожего на SQL, то вам, вероятно,
+  лучше просто взять любую из многочисленных доступных свободно (или несвободно) реляционных БД. В
+  современные оптимизаторы и интерпретаторы запросов популярных баз данных вложены тысячи
+  человеко-лет, и разработка даже простейших БД общего назначения занимает в лучшему случае годы.
+
+  Демонстрационный язык PigletQL имитирует работу интерпретатора именно SQL, но реально в работе мы
+  используем только отдельные элементы этой архитектуры, и для тех редких видов запросов, которые
+  трудно выразить в рамках реляционной модели.
+
+  Тем не менее, повторюсь: знакомство с архитектурой такого рода интерпретаторов пригодится в тех
+  случаях, где требуется гибко работать с потоками данных. Операторы в древовидном промежуточных
+  представления, к примеру, могут отвечать за полноценное вычисление выражений на входных данных;
+  вторые - сохранение промежуточных результатов; третьи - объединять потоки данных.
 
   Если для внутреннего представления возможно определить какие-то равенства, или даже полноценную
   алгебру, то несложно сделать рудиментарный оптимизатор, переписывающий деревья в более эффективную
   форму.
 
-  Производительность такого интерпретатора оставляет желать лучшего и использовать его имеет смысл,
-  например, при работе с медленными хранилищами данных либо с сильно сжатыми данными, где
-  декомпрессия занимает много времени. С другой стороны, интерпретатор Volcano устроен просто, и
-  любой программист сможет его модифицировать и развивать.
+  Производительность такой схемы интерпретации оставляет желать лучшего и использовать его имеет
+  смысл, например, при работе с медленными хранилищами данных либо с сильно сжатыми данными, где
+  декомпрессия занимает много времени. С другой стороны, интерпретатор типа Volcano устроен просто,
+  и любой программист сможет его модифицировать и развивать.
 
   Но если все же требуется решить проблемы с производительностью, то можно, например, компилировать
   дерево операторов физической алгебры в байт-код и исполнять его на виртуальной машине по примеру
   SQLite. Еще более трудоемкий подход: делать компиляцию дерева на лету в машинный код при помощи
-  LLVM, как с некоторых пор делает PostgreSQL.
+  LLVM, как это делает, например, MemSQL.
 
 * Литература
 

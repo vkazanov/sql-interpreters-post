@@ -5,7 +5,7 @@
   evaluation system" paper) interpreter. It does not do any optimization and keeps all data in
   memory.
 
-  It was created as an example language for an article ([[file:sql-interpreter-v2.org][in Russian]]) on SQL interpreter
+  It was created as an example language for an article ([[file:sql-interpreter.org][in Russian]]) on SQL interpreter
   architecture.
 
 * Building

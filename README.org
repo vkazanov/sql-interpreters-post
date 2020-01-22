@@ -5,7 +5,7 @@
   evaluation system" paper) interpreter. It does not do any optimization and keeps all data in
   memory.
 
-  It was created as an example language for an article ([[https://habr.com/ru/company/badoo/blog/461699/][in Russian]]) on SQL interpreter
+  It was created as an example language for an article ([[https://habr.com/ru/company/badoo/blog/461699/][Russian]], [[https://badootech.badoo.com/volcanic-piglet-or-do-it-yourself-sql-65357cd9d891][English]]) on SQL interpreter
   architecture.
 
 * Building
